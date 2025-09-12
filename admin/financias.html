@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Amaral Barbershop — Faturamento</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --brand: #0d6efd; /* azul principal */
+      --brand-2: #3b82f6; /* azul secundário */
+      --card-radius: 1.25rem;
+      --shadow-soft: 0 10px 30px rgba(13, 110, 253, 0.12);
+      --shadow-hover: 0 14px 38px rgba(13, 110, 253, 0.18);
+    }
+
+    body { background: linear-gradient(180deg, #f7f9fc 0%, #ffffff 100%); }
+
+    .navbar {
+      background: linear-gradient(90deg, var(--brand) 0%, var(--brand-2) 100%);
+      box-shadow: 0 10px 20px rgba(13,110,253,.18);
+    }
+    .navbar .navbar-brand, .navbar .nav-link, .navbar .navbar-text { color: #fff !important; }
+
+    .app-card {
+      border: none;
+      border-radius: var(--card-radius);
+      box-shadow: var(--shadow-soft);
+      transition: transform .2s ease, box-shadow .2s ease;
+      background: #fff;
+      overflow: hidden;
+      animation: fadeSlideUp .5s ease both;
+    }
+    .app-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+
+    .kpi-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: grid; place-items: center;
+      background: radial-gradient(120% 120% at 30% 20%, #fff, rgba(13,110,253,.1));
+      color: var(--brand);
+      box-shadow: inset 0 -6px 12px rgba(13,110,253,.08);
+    }
+
+    .table thead th { border-bottom: 2px solid #eef2f7; cursor: pointer; }
+    .table tbody tr { transition: background-color .15s ease; }
+    .table tbody tr:hover { background: #f8fbff; }
+
+    .badge-soft {
+      background: rgba(13,110,253,.08); color: var(--brand);
+      border: 1px solid rgba(13,110,253,.18);
+    }
+
+    .btn-primary { box-shadow: 0 10px 20px rgba(13,110,253,.25); }
+    .btn-primary:hover { box-shadow: 0 14px 26px rgba(13,110,253,.35); }
+
+    .search-input { border-radius: 999px; padding-left: 42px; }
+    .search-icon { position: absolute; left: 14px; top: 9px; color: #6c757d; }
+
+    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Mobile table → cards */
+    @media (max-width: 576px) {
+      .table-responsive { border: none; }
+      table.table thead { display: none; }
+      table.table tbody tr { display: block; margin-bottom: 12px; border-radius: 16px; box-shadow: var(--shadow-soft); border: none; }
+      table.table tbody td { display: grid; grid-template-columns: 120px 1fr; gap: .25rem; border: none; padding: .6rem .9rem; }
+      table.table tbody td::before { content: attr(data-label); font-weight: 600; color: #6c757d; }
+      .table-actions { padding-top: 0 !important; }
+    }
+    /* ==== Melhorias de design ==== */
+    body { background: radial-gradient(140% 100% at 10% 0%, #f1f6ff 0%, #ffffff 45%) no-repeat; }
+    .navbar { box-shadow: 0 12px 30px rgba(13,110,253,.22); backdrop-filter: saturate(160%) blur(8px); border-bottom: 1px solid rgba(255,255,255,.25); }
+    .navbar .nav-link { position: relative; opacity: .95; transition: opacity .2s ease; }
+    .navbar .nav-link:hover { opacity: 1; }
+    .navbar .nav-link::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: #fff; transform: scaleX(0); transform-origin: left; transition: transform .25s ease; }
+    .navbar .nav-link:hover::after, .navbar .nav-link.active::after { transform: scaleX(1); }
+    .app-card { backdrop-filter: saturate(120%) blur(4px); }
+    .form-control:focus, .form-select:focus { box-shadow: 0 0 0 .25rem rgba(13,110,253,.25); border-color: rgba(13,110,253,.65); }
+    .btn-outline-primary { border-color: rgba(13,110,253,.5); }
+    .fab { position: fixed; right: 16px; bottom: 16px; z-index: 1040; border-radius: 999px; padding: .9rem 1rem; box-shadow: var(--shadow-hover); }
+</style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+      <a class="navbar-brand fw-semibold" href="#"><i class="bi bi-bar-chart-line me-2"></i>Amaral Barbershop</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Alternar navegação">
+        <span class="navbar-toggler-icon" style="filter: invert(1)"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMain">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link active" aria-current="page" href="financias.html">Faturamentos</a></li>
+          <li class="nav-item"><a class="nav-link" href="metas.html">Metas</a></li>
+           <li class="nav-item"><a class="nav-link" href="equipe.html">Equipe</a></li>
+          <!-- Futuras abas
+          <li class="nav-item"><a class="nav-link disabled" aria-disabled="true">Metas</a></li>
+          <li class="nav-item"><a class="nav-link disabled" aria-disabled="true">Despesas</a></li>
+          -->
+        </ul>
+        <span class="navbar-text ms-lg-3 small">v2 • focado em <strong>Faturamento</strong></span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4 py-lg-5">
+    <!-- Header + ações -->
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+      <div>
+        <h1 class="h3 mb-1">Faturamento</h1>
+        <p class="text-secondary mb-0">Acompanhe e registre seus lançamentos. Totalmente responsivo, rápido e com detalhes em azul.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFiltros"><i class="bi bi-funnel me-1"></i>Filtros</button>
+        <button id="btnExportCsv" class="btn btn-outline-primary" type="button"><i class="bi bi-download me-1"></i>Exportar CSV</button>
+        <button id="btnImportCsv" class="btn btn-outline-primary" type="button"><i class="bi bi-cloud-arrow-up me-1"></i>Importar</button>
+        <input type="file" id="inputImportCsv" accept=".csv,text/csv" class="d-none" />
+        <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalLancamento"><i class="bi bi-plus-lg me-1"></i>Adicionar</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 g-lg-4 mb-4">
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="app-card p-3 p-lg-4 h-100">
+          <div class="d-flex align-items-center gap-3">
+            <div class="kpi-icon"><i class="bi bi-cash-coin fs-4"></i></div>
+            <div>
+              <div class="text-secondary small">Faturamento do mês</div>
+              <div id="kpiMes" class="h4 mb-0 fw-semibold">R$ 0,00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="app-card p-3 p-lg-4 h-100">
+          <div class="d-flex align-items-center gap-3">
+            <div class="kpi-icon"><i class="bi bi-calendar2-week fs-4"></i></div>
+            <div>
+              <div class="text-secondary small">Faturamento do ano</div>
+              <div id="kpiAno" class="h4 mb-0 fw-semibold">R$ 0,00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="app-card p-3 p-lg-4 h-100">
+          <div class="d-flex align-items-center gap-3">
+            <div class="kpi-icon"><i class="bi bi-clipboard2-data fs-4"></i></div>
+            <div>
+              <div class="text-secondary small">Ticket médio (mês)</div>
+              <div id="kpiTicket" class="h4 mb-0 fw-semibold">R$ 0,00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="app-card p-3 p-lg-4 h-100">
+          <div class="d-flex align-items-center gap-3">
+            <div class="kpi-icon"><i class="bi bi-receipt fs-4"></i></div>
+            <div>
+              <div class="text-secondary small">Lançamentos (mês)</div>
+              <div id="kpiCount" class="h4 mb-0 fw-semibold">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Busca rápida -->
+    <div class="position-relative mb-3">
+      <i class="bi bi-search search-icon"></i>
+      <input id="searchInput" type="search" class="form-control form-control-lg search-input" placeholder="Buscar por descrição, categoria ou cliente…">
+    </div>
+
+    <!-- Tabela / Lista -->
+    <div class="app-card p-2 p-lg-3">
+      <div class="table-responsive">
+        <table id="tabelaLanc" class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th data-sort="date">Data <i class="bi bi-arrow-down-up ms-1 text-secondary"></i></th>
+              <th data-sort="description">Descrição</th>
+              <th class="d-none d-md-table-cell" data-sort="category">Categoria</th>
+              <th class="d-none d-lg-table-cell" data-sort="client">Cliente</th>
+              <th data-sort="amount" class="text-end">Valor</th>
+              <th data-sort="status" class="text-center">Status</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyLanc">
+            <!-- linhas renderizadas via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div id="emptyState" class="text-center p-4 d-none">
+        <div class="kpi-icon mx-auto mb-2" style="width:64px;height:64px"><i class="bi bi-inboxes"></i></div>
+        <p class="mb-2">Sem lançamentos com os filtros atuais.</p>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalLancamento"><i class="bi bi-plus-lg me-1"></i>Novo lançamento</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Offcanvas: Filtros -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasFiltros" aria-labelledby="offcanvasFiltrosLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasFiltrosLabel"><i class="bi bi-funnel me-2 text-primary"></i>Filtros</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+    </div>
+    <div class="offcanvas-body">
+      <div class="vstack gap-3">
+        <div>
+          <label class="form-label">Período</label>
+          <div class="d-flex gap-2">
+            <input id="filtroDataIni" type="date" class="form-control" />
+            <input id="filtroDataFim" type="date" class="form-control" />
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Status</label>
+          <select id="filtroStatus" class="form-select">
+            <option value="">Todos</option>
+            <option value="Pago">Pago</option>
+            <option value="Pendente">Pendente</option>
+            <option value="Atrasado">Atrasado</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Categoria</label>
+          <input id="filtroCategoria" type="text" class="form-control" placeholder="Ex.: Assinaturas, Serviços…" />
+        </div>
+        <div class="d-grid">
+          <button id="btnAplicarFiltros" class="btn btn-primary"><i class="bi bi-check2-circle me-1"></i>Aplicar</button>
+        </div>
+        <button id="btnLimparFiltros" class="btn btn-outline-secondary">Limpar filtros</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Novo/Editar Lançamento -->
+  <div class="modal fade" id="modalLancamento" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form id="formLancamento" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-receipt text-primary me-2"></i><span id="modalTitle">Novo lançamento</span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="lancId" />
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label">Data</label>
+              <input id="lancData" type="date" class="form-control" required />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Valor (R$)</label>
+              <input id="lancValor" type="number" step="0.01" min="0" class="form-control" placeholder="0,00" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Descrição</label>
+              <input id="lancDesc" type="text" class="form-control" placeholder="Ex.: Plano Premium, Consultoria…" required />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Categoria</label>
+              <input id="lancCat" type="text" class="form-control" placeholder="Assinaturas, Serviços…" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Cliente</label>
+              <input id="lancCliente" type="text" class="form-control" placeholder="Nome/Empresa do cliente" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Status</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="lancStatus" id="stPago" value="Pago" checked>
+                  <label class="form-check-label" for="stPago">Pago</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="lancStatus" id="stPend" value="Pendente">
+                  <label class="form-check-label" for="stPend">Pendente</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="lancStatus" id="stAtr" value="Atrasado">
+                  <label class="form-check-label" for="stAtr">Atrasado</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">    // === Importar backup (CSV) — substitui lançamentos atuais ===
+    function handleImportFile(evt) {
+      const file = evt.target.files && evt.target.files[0];
+      if (!file) return;
+      if (!confirm('Importar backup substituirá os lançamentos atuais. Deseja continuar?')) { evt.target.value = ''; return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const text = reader.result.toString();
+          const imported = parseCSV(text);
+          if (!imported.length) throw new Error('Arquivo vazio ou inválido.');
+          entries = imported.map(row => ({
+            id: crypto.randomUUID(),
+            date: parseDateFlexible(row.date || row.data),
+            description: (row['descrição'] || row.descricao || row.description || '').toString().trim(),
+            category: (row.categoria || row.category || '').toString().trim(),
+            client: (row.cliente || row.client || '').toString().trim(),
+            amount: parseAmountFlexible(row.valor || row.amount),
+            status: sanitizeStatus(row.status)
+          })).filter(e => e.date && !isNaN(new Date(e.date)) && !isNaN(e.amount));
+          save(); rerender();
+          alert(`${entries.length} lançamentos importados com sucesso.`);
+        } catch (err) {
+          console.error(err);
+          alert('Falha ao importar. Verifique o formato do arquivo (CSV).');
+        } finally {
+          evt.target.value = '';
+        }
+      };
+      reader.readAsText(file, 'utf-8');
+    }
+
+    // CSV helpers sem regex
+    function parseCSV(text) {
+      const clean = text && text.charCodeAt(0) === 0xFEFF ? text.slice(1) : (text || '');
+      const rawLines = clean.split('
+').filter(l => l.trim().length);
+      const lines = rawLines.map(l => l.endsWith('
+') ? l.slice(0, -1) : l);
+      if (lines.length < 2) return [];
+      const header = splitCSVLine(lines[0]);
+      const keys = header.map(h => h.trim().toLowerCase());
+      const rows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = splitCSVLine(lines[i]);
+        const obj = {};
+        keys.forEach((k, idx) => { obj[k] = (cols[idx] ?? '').trim(); });
+        rows.push(obj);
+      }
+      return rows;
+    }
+
+    function splitCSVLine(line) {
+      const out = []; let cur = ''; let inQ = false; for (let i=0;i<line.length;i++) {
+        const ch = line[i]; const next = line[i+1];
+        if (ch === '"') {
+          if (inQ && next === '"') { cur += '"'; i++; }
+          else { inQ = !inQ; }
+        } else if ((ch === ';' || ch === ',') && !inQ) { out.push(cur); cur = ''; }
+        else { cur += ch; }
+      }
+      out.push(cur);
+      return out;
+    }
+
+    function parseDateFlexible(s) {
+      if (!s) return '';
+      const t = String(s).trim();
+      if (t.length === 10 && t[4] === '-' && t[7] === '-') return t; // ISO
+      if (t.length === 10 && t[2] === '/' && t[5] === '/') { // BR
+        const d = t.slice(0,2), m = t.slice(3,5), y = t.slice(6,10);
+        return `${y}-${m}-${d}`;
+      }
+      const d = new Date(t);
+      if (!isNaN(d)) return toISO(d);
+      return '';
+    }
+
+    function parseAmountFlexible(v) {
+      if (v == null) return 0;
+      let s = String(v).trim();
+      s = s.replace('R$', '');
+      while (s.indexOf(' ') >= 0) s = s.replace(' ', '');
+      s = s.split('.').join('').split(',').join('.');
+      const n = parseFloat(s);
+      return isNaN(n) ? 0 : n;
+    }
+
+    function sanitizeStatus(st) {
+      const m = String(st||'').toLowerCase();
+      if (m.startsWith('pag')) return 'Pago';
+      if (m.startsWith('pen')) return 'Pendente';
+      if (m.startsWith('atr') || m.startsWith('ven')) return 'Atrasado';
+      return 'Pago';
+    }
+</script>
+  <script>
+    // Utilidades
+    const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+    const fmtDate = (iso) => new Date(iso + 'T00:00:00');
+    const toISO = (d) => d.toISOString().slice(0,10);
+
+    // Estado
+    const STORAGE_KEY = 'mf_entries_v1';
+    let entries = [];
+    let sortState = { key: 'date', dir: 'desc' };
+    let filters = { text: '', status: '', cat: '', start: '', end: '' };
+
+    const seedData = [
+      { id: crypto.randomUUID(), date: toISO(new Date()), description: 'Plano Premium', category: 'Assinaturas', client: 'Acme LTDA', amount: 1299.90, status: 'Pago' },
+      { id: crypto.randomUUID(), date: toISO(new Date(new Date().setDate(new Date().getDate()-3))), description: 'Consultoria nível 2', category: 'Serviços', client: 'Beta S/A', amount: 3800.00, status: 'Pendente' },
+      { id: crypto.randomUUID(), date: toISO(new Date(new Date().setMonth(new Date().getMonth()-1, 28))), description: 'Suporte técnico', category: 'Serviços', client: 'Gamma Ltda', amount: 600.00, status: 'Pago' }
+    ];
+
+    function load() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      entries = raw ? JSON.parse(raw) : seedData;
+      save();
+    }
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
+
+    // Renderização
+    function applyFilters(list) {
+      return list.filter(e => {
+        const okText = !filters.text || [e.description, e.category, e.client].join(' ').toLowerCase().includes(filters.text.toLowerCase());
+        const okStatus = !filters.status || e.status === filters.status;
+        const okCat = !filters.cat || (e.category||'').toLowerCase().includes(filters.cat.toLowerCase());
+        const d = fmtDate(e.date);
+        const okStart = !filters.start || d >= fmtDate(filters.start);
+        const okEnd = !filters.end || d <= fmtDate(filters.end);
+        return okText && okStatus && okCat && okStart && okEnd;
+      });
+    }
+
+    function sortList(list) {
+      const { key, dir } = sortState;
+      const s = [...list].sort((a,b) => {
+        let va = a[key], vb = b[key];
+        if (key === 'amount') { va = Number(va); vb = Number(vb); }
+        if (key === 'date') { va = fmtDate(a.date); vb = fmtDate(b.date); }
+        if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+        if (va < vb) return dir === 'asc' ? -1 : 1;
+        if (va > vb) return dir === 'asc' ? 1 : -1;
+        return 0;
+      });
+      return s;
+    }
+
+    function statusBadge(st) {
+      const map = { 'Pago': 'success', 'Pendente': 'warning', 'Atrasado': 'danger' };
+      return `<span class="badge text-bg-${map[st]||'secondary'} bg-opacity-10">${st}</span>`;
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tbodyLanc');
+      const list = sortList(applyFilters(entries));
+
+      tbody.innerHTML = '';
+      list.forEach(e => {
+        const tr = document.createElement('tr');
+        tr.style.animation = 'fadeSlideUp .35s ease both';
+        tr.innerHTML = `
+          <td data-label="Data">${new Date(e.date).toLocaleDateString('pt-BR')}</td>
+          <td data-label="Descrição">${e.description}</td>
+          <td data-label="Categoria" class="d-none d-md-table-cell">${e.category||'-'}</td>
+          <td data-label="Cliente" class="d-none d-lg-table-cell">${e.client||'-'}</td>
+          <td data-label="Valor" class="text-end fw-semibold">${BRL.format(e.amount)}</td>
+          <td data-label="Status" class="text-center">${statusBadge(e.status)}</td>
+          <td data-label="Ações" class="text-end table-actions">
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline-primary" title="Editar" onclick="onEdit('${e.id}')"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger" title="Excluir" onclick="onDelete('${e.id}')"><i class="bi bi-trash3"></i></button>
+            </div>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('emptyState').classList.toggle('d-none', list.length !== 0);
+    }
+
+    function renderKpis() {
+      const now = new Date();
+      const m = now.getMonth();
+      const y = now.getFullYear();
+      const inMonth = entries.filter(e => {
+        const d = new Date(e.date);
+        return d.getMonth() === m && d.getFullYear() === y;
+      });
+      const inYear = entries.filter(e => new Date(e.date).getFullYear() === y);
+
+      const totalMes = inMonth.reduce((s,e) => s + Number(e.amount), 0);
+      const totalAno = inYear.reduce((s,e) => s + Number(e.amount), 0);
+      const ticket = inMonth.length ? totalMes / inMonth.length : 0;
+
+      document.getElementById('kpiMes').textContent = BRL.format(totalMes);
+      document.getElementById('kpiAno').textContent = BRL.format(totalAno);
+      document.getElementById('kpiTicket').textContent = BRL.format(ticket);
+      document.getElementById('kpiCount').textContent = inMonth.length;
+    }
+
+    function rerender() { renderKpis(); renderTable(); }
+
+    // Handlers básicos
+    document.addEventListener('DOMContentLoaded', () => {
+      load();
+      rerender();
+
+      // Ordenação por cabeçalho
+      document.querySelectorAll('#tabelaLanc thead th[data-sort]')
+        .forEach(th => th.addEventListener('click', () => {
+          const key = th.getAttribute('data-sort');
+          if (sortState.key === key) sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+          else { sortState.key = key; sortState.dir = 'asc'; }
+          rerender();
+        }));
+
+      // Busca rápida
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        filters.text = e.target.value; rerender();
+      });
+
+      // Filtros
+      document.getElementById('btnAplicarFiltros').addEventListener('click', () => {
+        filters.start = document.getElementById('filtroDataIni').value || '';
+        filters.end = document.getElementById('filtroDataFim').value || '';
+        filters.status = document.getElementById('filtroStatus').value || '';
+        filters.cat = document.getElementById('filtroCategoria').value || '';
+        rerender();
+        // fecha offcanvas
+        const off = bootstrap.Offcanvas.getOrCreateInstance('#offcanvasFiltros');
+        off.hide();
+      });
+      document.getElementById('btnLimparFiltros').addEventListener('click', () => {
+        filters = { text: filters.text, status: '', cat: '', start: '', end: '' };
+        document.getElementById('filtroDataIni').value = '';
+        document.getElementById('filtroDataFim').value = '';
+        document.getElementById('filtroStatus').value = '';
+        document.getElementById('filtroCategoria').value = '';
+        rerender();
+      });
+
+      // Export CSV
+      document.getElementById('btnExportCsv').addEventListener('click', exportCSV);
+      document.getElementById('btnImportCsv').addEventListener('click', () => document.getElementById('inputImportCsv').click());
+      document.getElementById('inputImportCsv').addEventListener('change', handleImportFile);
+
+      // Form modal
+      document.getElementById('formLancamento').addEventListener('submit', onSubmitLancamento);
+
+      // Ajuste visual: ícone da navbar toggler
+      const toggler = document.querySelector('.navbar-toggler');
+      if (toggler) toggler.innerHTML = '<i class="bi bi-list text-white fs-3"></i>';
+    });
+
+    // CRUD
+    function onEdit(id) {
+      const e = entries.find(x => x.id === id);
+      if (!e) return;
+      document.getElementById('modalTitle').textContent = 'Editar lançamento';
+      document.getElementById('lancId').value = e.id;
+      document.getElementById('lancData').value = e.date;
+      document.getElementById('lancValor').value = Number(e.amount).toFixed(2);
+      document.getElementById('lancDesc').value = e.description;
+      document.getElementById('lancCat').value = e.category || '';
+      document.getElementById('lancCliente').value = e.client || '';
+      document.getElementById('stPago').checked = e.status === 'Pago';
+      document.getElementById('stPend').checked = e.status === 'Pendente';
+      document.getElementById('stAtr').checked = e.status === 'Atrasado';
+      const modal = bootstrap.Modal.getOrCreateInstance('#modalLancamento');
+      modal.show();
+    }
+
+    function onDelete(id) {
+      if (!confirm('Excluir este lançamento?')) return;
+      entries = entries.filter(e => e.id !== id);
+      save(); rerender();
+    }
+
+    function onSubmitLancamento(evt) {
+      evt.preventDefault();
+      const id = document.getElementById('lancId').value || crypto.randomUUID();
+      const payload = {
+        id,
+        date: document.getElementById('lancData').value,
+        amount: Number(document.getElementById('lancValor').value),
+        description: document.getElementById('lancDesc').value.trim(),
+        category: document.getElementById('lancCat').value.trim(),
+        client: document.getElementById('lancCliente').value.trim(),
+        status: document.getElementById('stPago').checked ? 'Pago' : (document.getElementById('stPend').checked ? 'Pendente' : 'Atrasado')
+      };
+
+      // validação simples
+      if (!payload.date || isNaN(payload.amount) || !payload.description) {
+        alert('Preencha data, valor e descrição corretamente.');
+        return;
+      }
+
+      const exists = entries.some(e => e.id === id);
+      if (exists) entries = entries.map(e => e.id === id ? payload : e);
+      else entries.unshift(payload);
+
+      save(); rerender();
+      evt.target.reset();
+      document.getElementById('lancId').value = '';
+      document.getElementById('modalTitle').textContent = 'Novo lançamento';
+      bootstrap.Modal.getOrCreateInstance('#modalLancamento').hide();
+    }
+
+    // Exportação CSV (usando filtros e ordenação atuais)
+    function exportCSV() {
+      const list = sortList(applyFilters(entries));
+      if (!list.length) { alert('Nada para exportar com os filtros atuais.'); return; }
+      const headers = ['Data','Descrição','Categoria','Cliente','Valor','Status'];
+      const rows = list.map(e => [
+        new Date(e.date).toLocaleDateString('pt-BR'),
+        safeCsv(e.description),
+        safeCsv(e.category||''),
+        safeCsv(e.client||''),
+        BRL.format(e.amount).replace(/\u00A0/g, ' '),
+        e.status
+      ]);
+      const csv = [headers, ...rows].map(r => r.map(cell => `"${String(cell).replaceAll('"','""')}"`).join(';')).join('\n');
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `faturamento_${toISO(new Date())}.csv`;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+    const safeCsv = (s) => (s||'').replaceAll('\n',' ').replaceAll('\r',' ').trim();
+  </script>
+  <!-- Botão flutuante de adicionar (mobile) -->
+  <button class="btn btn-primary fab d-md-none" type="button" data-bs-toggle="modal" data-bs-target="#modalLancamento"><i class="bi bi-plus-lg"></i></button>
+</body>
+</html>
