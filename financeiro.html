@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="pt-br" data-bs-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Financeiro — Amaral BarberShop (v2-fix2)</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root { --bs-primary:#0d6efd; }
+    body { background:#f8fafc; }
+
+    .navbar { backdrop-filter:saturate(180%) blur(8px); background:rgba(255,255,255,.9)!important; box-shadow:0 2px 12px rgba(0,0,0,.06); }
+    .navbar-brand { font-weight:700; letter-spacing:.3px; color:#0f172a; display:flex; align-items:center; gap:.5rem; }
+    .nav-link { display:flex; align-items:center; gap:.5rem; font-weight:500; color:#0f172a; padding:.5rem .9rem; border-radius:.75rem; transition:.2s; }
+    .nav-link:hover { background:rgba(13,110,253,.08); color:var(--bs-primary); }
+    .nav-link.active { color:#0d6efd; background:rgba(13,110,253,.12); box-shadow:inset 0 0 0 1px rgba(13,110,253,.25); }
+
+    .content { max-width:1200px; margin:2rem auto; padding:0 1rem; }
+    .toolbar { gap:.6rem; }
+    .toolbar .btn, .toolbar .input-group { height:42px; }
+    .toolbar .input-group .form-control { padding-top:.45rem; padding-bottom:.45rem; }
+
+    .two-col { display:grid; grid-template-columns: 1fr; gap:1rem; }
+    @media (min-width: 1200px){ .two-col { grid-template-columns: 2fr 1fr; } }
+
+    .card { border:1px solid rgba(2,6,23,.06); border-radius:1rem; }
+    .summary .card { box-shadow:0 6px 18px rgba(0,0,0,.05); }
+    .summary .label { color:#64748b; font-size:.85rem; }
+    .summary .value { font-weight:700; font-size:1.15rem; }
+    .value.pos { color:#16a34a; }
+    .value.neg { color:#ef4444; }
+
+    .table thead th { position:sticky; top:0; background:#fff; z-index:1; }
+    .table-hover tbody tr:hover { background:#f6f9ff; }
+    .badge-lightblue { background:rgba(13,110,253,.12); color:#0d6efd; border:1px solid rgba(13,110,253,.2); }
+
+    .filter-chip { border:1px dashed rgba(13,110,253,.35); padding:.25rem .6rem; border-radius:999px; font-size:.8rem; color:#0d6efd; background:#fff; }
+
+    .empty-state { border:2px dashed rgba(13,110,253,.3); border-radius:1rem; padding:1.25rem; text-align:center; color:#64748b; background:#fff; }
+
+    /* Gráfico 12 meses: altura fixa para evitar scroll/resize-loop */
+    .chart-fixed { position: relative; height: 300px; }
+    .chart-fixed canvas { position:absolute; inset:0; width:100% !important; height:100% !important; }
+
+    /* NOVO: wrappers quadrados e do mesmo tamanho para os donuts */
+    .chart-square { position:relative; width:100%; max-width:360px; aspect-ratio:1/1; margin:0 auto; }
+    .chart-square canvas { position:absolute; inset:0; width:100% !important; height:100% !important; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg bg-body border-0 sticky-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#"><i class="bi-scissors"></i> Amaral BarberShop</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"><span class="navbar-toggler-icon"></span></button>
+      <div class="collapse navbar-collapse" id="navMain">
+        <ul class="navbar-nav ms-auto align-items-lg-center">
+          <li class="nav-item"><a class="nav-link" href="index.html"><i class="bi-house-door"></i> Home</a></li>
+          <li class="nav-item"><a class="nav-link active" aria-current="page" href="#"><i class="bi-cash-stack"></i> Financeiro</a></li>
+          <li class="nav-item"><a class="nav-link" href="equipe.html"><i class="bi-people"></i> Equipe</a></li>
+          <li class="nav-item"><a class="nav-link" href="agendamento.html"><i class="bi-calendar-event"></i> Agendamentos</a></li>
+          <li class="nav-item"><a class="nav-link" href="configuracoes".html><i class="bi-gear"></i> Configurações</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="content">
+    <div class="d-flex flex-wrap align-items-center mb-3 toolbar">
+      <h5 class="mb-0"><i class="bi-cash-stack me-1"></i> Financeiro</h5>
+      <div class="ms-auto d-flex flex-wrap toolbar">
+        <div class="input-group" style="min-width:300px;">
+          <span class="input-group-text bg-white"><i class="bi-search"></i></span>
+          <input id="q" type="search" class="form-control" placeholder="Buscar por descrição…"/>
+        </div>
+        <button id="btnAdd" class="btn btn-primary px-3"><i class="bi-plus-lg me-1"></i> Lançar</button>
+        <button id="btnReset" class="btn btn-outline-danger px-3"><i class="bi-trash3 me-1"></i> Zerar</button>
+      </div>
+    </div>
+
+    <!-- SUMMARY -->
+    <section class="summary mb-3">
+      <div class="row g-3">
+        <div class="col-6 col-lg-3"><div class="card p-3"><div class="label"><i class="bi-calendar-day me-1"></i> Hoje</div><div class="value" id="sumHoje">R$ 0,00</div><div class="small text-secondary" id="sumHojeDesc">Receitas - Despesas</div></div></div>
+        <div class="col-6 col-lg-3"><div class="card p-3"><div class="label"><i class="bi-calendar-week me-1"></i> Semana</div><div class="value" id="sumSemana">R$ 0,00</div><div class="small text-secondary" id="sumSemanaDesc">Receitas - Despesas</div></div></div>
+        <div class="col-6 col-lg-3"><div class="card p-3"><div class="label"><i class="bi-calendar-month me-1"></i> Mês</div><div class="value" id="sumMes">R$ 0,00</div><div class="small text-secondary" id="sumMesDesc">Receitas - Despesas</div></div></div>
+        <div class="col-6 col-lg-3"><div class="card p-3"><div class="label"><i class="bi-wallet2 me-1"></i> Saldo Total</div><div class="value" id="sumTotal">R$ 0,00</div><div class="small text-secondary" id="sumTotalDesc">Acumulado</div></div></div>
+      </div>
+    </section>
+
+    <section class="two-col">
+      <!-- Main -->
+      <div>
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-body">
+            <div class="row g-3 align-items-end">
+              <div class="col-md-3">
+                <label class="form-label small mb-1">Período</label>
+                <select id="periodo" class="form-select">
+                  <option value="hoje">Hoje</option><option value="semana">Esta semana</option>
+                  <option value="mes" selected>Este mês</option><option value="ano">Este ano</option>
+                  <option value="tudo">Tudo</option><option value="custom">Personalizado…</option>
+                </select>
+              </div>
+              <div class="col-md-4 d-flex gap-2">
+                <div class="flex-fill"><label class="form-label small mb-1">De</label><input id="from" type="date" class="form-control" disabled></div>
+                <div class="flex-fill"><label class="form-label small mb-1">Até</label><input id="to" type="date" class="form-control" disabled></div>
+              </div>
+              <div class="col-md-2"><label class="form-label small mb-1">Tipo</label><select id="tipo" class="form-select"><option value="">Todos</option><option value="receita">Receitas</option><option value="despesa">Despesas</option></select></div>
+              <div class="col-md-2"><label class="form-label small mb-1">Categoria</label><select id="categoria" class="form-select"><option value="">Todas</option><option>Serviço</option><option>Produto</option><option>Outra</option><option>Despesa fixa</option><option>Despesa variável</option></select></div>
+              <div class="col-md-1"><label class="form-label small mb-1">Forma</label><select id="forma" class="form-select"><option value="">Todas</option><option>Dinheiro</option><option>PIX</option><option>Cartão</option><option>Outros</option></select></div>
+              <div class="col-12 d-flex align-items-center gap-2 mt-1"><span class="small text-secondary">Filtros ativos:</span><span id="chips" class="d-flex flex-wrap gap-2"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Membro</th><th>Forma</th><th class="text-end">Valor</th><th></th></tr></thead>
+                <tbody id="tbody"></tbody>
+              </table>
+              <div id="empty" class="empty-state d-none"><div class="mb-2"><i class="bi-cash-coin"></i></div><div>Nenhum lançamento para o período/filtragem. Clique em <strong>Lançar</strong> para adicionar.</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Despesas por categoria (período atual) — agora com tamanho igual ao do lado -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="card-title mb-3"><i class="bi-pie-chart me-1"></i> Despesas por categoria (período atual)</h6>
+            <div class="chart-square"><canvas id="chartDespesasMain"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side -->
+      <aside>
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-body">
+            <h6 class="card-title mb-3"><i class="bi-graph-up-arrow me-1"></i> Receitas x Despesas (12 meses)</h6>
+            <div class="chart-fixed"><canvas id="chart12"></canvas></div>
+          </div>
+        </div>
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="card-title mb-3"><i class="bi-pie-chart me-1"></i> Receitas por categoria (período atual)</h6>
+            <div class="chart-square"><canvas id="chartCatReceitas"></canvas></div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <!-- MODAL -->
+  <div class="modal fade" id="modalLanc" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h6 class="modal-title"><i class="bi-journal-plus me-1"></i> <span id="modalTitle">Novo lançamento</span></h6><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button></div>
+        <div class="modal-body">
+          <form id="formLanc" class="row g-3">
+            <input type="hidden" id="lId" />
+            <div class="col-12">
+              <label class="form-label small">Tipo</label>
+              <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="lTipo" id="lReceita" value="receita" checked>
+                <label class="btn btn-outline-success" for="lReceita"><i class="bi-arrow-up-circle"></i> Receita</label>
+                <input type="radio" class="btn-check" name="lTipo" id="lDespesa" value="despesa">
+                <label class="btn btn-outline-danger" for="lDespesa"><i class="bi-arrow-down-circle"></i> Despesa</label>
+              </div>
+            </div>
+            <div class="col-md-6"><div class="form-floating"><select id="lCategoria" class="form-select"><option>Serviço</option><option>Produto</option><option>Outra</option><option>Despesa fixa</option><option>Despesa variável</option></select><label for="lCategoria"><i class="bi-tags"></i> Categoria</label></div></div>
+            <div class="col-md-6"><div class="form-floating"><input type="text" id="lDescricao" class="form-control" placeholder="Descrição"/><label for="lDescricao"><i class="bi-card-text"></i> Descrição</label></div></div>
+            <div class="col-md-6"><div class="form-floating"><input type="number" step="0.01" min="0" id="lValor" class="form-control" placeholder="Valor (R$)" required/><label for="lValor"><i class="bi-currency-dollar"></i> Valor (R$)</label></div></div>
+            <div class="col-md-6"><div class="form-floating"><input type="date" id="lData" class="form-control" required/><label for="lData"><i class="bi-calendar-event"></i> Data</label></div></div>
+            <div class="col-md-6"><div class="form-floating"><select id="lForma" class="form-select"><option>Dinheiro</option><option>PIX</option><option>Cartão</option><option>Outros</option></select><label for="lForma"><i class="bi-credit-card"></i> Forma de pagamento</label></div></div>
+            <div class="col-md-6"><div class="form-floating"><select id="lMembro" class="form-select"><option value="">Sem vínculo</option></select><label for="lMembro"><i class="bi-person-badge"></i> Membro (se receita)</label></div></div>
+            <div class="col-12">
+              <div class="card border-0" style="background:#f1f5ff;">
+                <div class="card-body py-3">
+                  <div class="small text-secondary mb-2"><i class="bi-activity me-1"></i> Métricas (aplicadas se <strong>Receita</strong>)</div>
+                  <div class="row g-2">
+                    <div class="col-md-4"><div class="form-floating"><input type="number" min="0" id="lCortes" class="form-control" value="0"/><label for="lCortes"><i class="bi-scissors"></i> Cortes (qtd)</label></div></div>
+                    <div class="col-md-4"><div class="form-floating"><input type="number" min="0" id="lProdutosQtd" class="form-control" value="0"/><label for="lProdutosQtd"><i class="bi-bag"></i> Produtos vendidos (qtd)</label></div></div>
+                    <div class="col-md-4"><div class="form-floating"><input type="number" step="0.01" min="0" id="lTicket" class="form-control" value="0"/><label for="lTicket"><i class="bi-receipt"></i> Ticket médio (R$)</label></div></div>
+                  </div>
+                  <div class="small text-secondary mt-2">Dica: se deixar Ticket médio = 0, recalculamos (faturamento ÷ cortes) ao sincronizar com a Equipe.</div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button id="btnSaveLanc" class="btn btn-primary"><i class="bi-save me-1"></i> Salvar</button></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const STORAGE_KEY = 'abs_financeiro_v2fix'; // mantém seus dados anteriores
+    let lanc = [];
+    function load(){ const raw = localStorage.getItem(STORAGE_KEY); if(raw){ try{ lanc = JSON.parse(raw)||[]; }catch{} } }
+    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(lanc)); }
+
+    const fmtBRL = (v)=> new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(v||0));
+    const pad2 = (n)=> String(n).padStart(2,'0');
+    const todayStr = ()=>{ const d=new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); };
+    const fmtDMY = (s)=>{ if(!s) return ''; const [Y,M,D] = s.split('-'); return D+'/'+M+'/'+Y; };
+    const mondayOfWeek = (d)=>{ const date = new Date(d); const day = (date.getDay()+6)%7; date.setDate(date.getDate()-day); date.setHours(0,0,0,0); return date; };
+    const sundayOfWeek = (d)=>{ const m = mondayOfWeek(d); const s = new Date(m); s.setDate(m.getDate()+6); s.setHours(23,59,59,999); return s; };
+
+    const q = document.getElementById('q');
+    const periodo = document.getElementById('periodo');
+    const from = document.getElementById('from');
+    const to = document.getElementById('to');
+    const tipo = document.getElementById('tipo');
+    const categoria = document.getElementById('categoria');
+    const forma = document.getElementById('forma');
+    const chips = document.getElementById('chips');
+    const tbody = document.getElementById('tbody');
+    const empty = document.getElementById('empty');
+
+    const btnAdd = document.getElementById('btnAdd');
+    const btnReset = document.getElementById('btnReset');
+    const modal = new bootstrap.Modal(document.getElementById('modalLanc'));
+    const modalTitle = document.getElementById('modalTitle');
+    const btnSaveLanc = document.getElementById('btnSaveLanc');
+
+    const lId = document.getElementById('lId');
+    const lReceita = document.getElementById('lReceita');
+    const lCategoria = document.getElementById('lCategoria');
+    const lDescricao = document.getElementById('lDescricao');
+    const lValor = document.getElementById('lValor');
+    const lData = document.getElementById('lData');
+    const lForma = document.getElementById('lForma');
+    const lMembro = document.getElementById('lMembro');
+    const lCortes = document.getElementById('lCortes');
+    const lProdutosQtd = document.getElementById('lProdutosQtd');
+    const lTicket = document.getElementById('lTicket');
+
+    const sumHoje = document.getElementById('sumHoje');
+    const sumSemana = document.getElementById('sumSemana');
+    const sumMes = document.getElementById('sumMes');
+    const sumTotal = document.getElementById('sumTotal');
+    const sumHojeDesc = document.getElementById('sumHojeDesc');
+    const sumSemanaDesc = document.getElementById('sumSemanaDesc');
+    const sumMesDesc = document.getElementById('sumMesDesc');
+    const sumTotalDesc = document.getElementById('sumTotalDesc');
+
+    let chart12, chartCatReceitas, chartDespesasMain;
+
+    function loadMembersFromEquipe(){
+      const keys = ['abs_equipe_v5','abs_equipe_v4','abs_equipe_v3'];
+      let eq = null;
+      for (const k of keys){ const raw = localStorage.getItem(k); if(raw){ try{ eq = JSON.parse(raw); break; }catch{} } }
+      const members = (eq && Array.isArray(eq.membros)) ? eq.membros : [];
+      lMembro.innerHTML = '<option value="">Sem vínculo</option>' + members.map(m=>`<option value="${m.id}">${m.nome}</option>`).join('');
+    }
+
+    function currentRange(){
+      const now = new Date();
+      let start, end;
+      if (periodo.value==='hoje'){ start = new Date(now.getFullYear(), now.getMonth(), now.getDate()); end = new Date(now.getFullYear(), now.getMonth(), now.getDate(),23,59,59,999); }
+      if (periodo.value==='semana'){ start = mondayOfWeek(now); end = sundayOfWeek(now); }
+      if (periodo.value==='mes'){ start = new Date(now.getFullYear(), now.getMonth(), 1); end = new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59,999); }
+      if (periodo.value==='ano'){ start = new Date(now.getFullYear(), 0, 1); end = new Date(now.getFullYear(), 11, 31, 23,59,59,999); }
+      if (periodo.value==='tudo'){ start = new Date(2000,0,1); end = new Date(2100,0,1); }
+      if (periodo.value==='custom'){ start = from.value ? new Date(from.value+'T00:00:00') : new Date(2000,0,1); end = to.value ? new Date(to.value+'T23:59:59') : new Date(2100,0,1); }
+      return {start, end};
+    }
+
+    function filterLanc(base = lanc){
+      const qv = q.value.trim().toLowerCase();
+      const {start,end} = currentRange();
+      return base.filter(it=>{
+        const d = new Date(it.data+'T12:00:00');
+        if (d<start || d>end) return false;
+        if (tipo.value && it.tipo!==tipo.value) return false;
+        if (categoria.value && it.categoria!==categoria.value) return false;
+        if (forma.value && it.forma!==forma.value) return false;
+        if (qv && !String(it.descricao||'').toLowerCase().includes(qv)) return false;
+        return true;
+      });
+    }
+
+    function filterForTipo(t){
+      const prevTipo = tipo.value; tipo.value = '';
+      const arr = filterLanc().filter(it=> it.tipo===t);
+      tipo.value = prevTipo; return arr;
+    }
+
+    function updateChips(){
+      const list = [];
+      list.push(`<span class="filter-chip"><i class="bi-calendar-check me-1"></i>${periodo.options[periodo.selectedIndex].text}</span>`);
+      if (tipo.value) list.push(`<span class="filter-chip"><i class="bi-sliders me-1"></i>${tipo.value}</span>`);
+      if (categoria.value) list.push(`<span class="filter-chip"><i class="bi-tag me-1"></i>${categoria.value}</span>`);
+      if (forma.value) list.push(`<span class="filter-chip"><i class="bi-credit-card me-1"></i>${forma.value}</span>`);
+      if (q.value.trim()) list.push(`<span class="filter-chip"><i class="bi-search me-1"></i>${q.value.trim()}</span>`);
+      chips.innerHTML = list.join(' ');
+    }
+
+    function renderTable(){
+      const rows = filterLanc().sort((a,b)=> a.data<b.data ? 1 : -1);
+      if (!rows.length){ tbody.innerHTML = ''; empty.classList.remove('d-none'); return; }
+      empty.classList.add('d-none');
+      tbody.innerHTML = rows.map(it=>{
+        const tipoIcon = it.tipo==='receita'
+          ? '<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi-arrow-up-circle"></i> Receita</span>'
+          : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi-arrow-down-circle"></i> Despesa</span>';
+        const valClass = it.tipo==='receita' ? 'text-success' : 'text-danger';
+        return `<tr data-id="${it.id}">
+          <td>${fmtDMY(it.data)}</td>
+          <td>${tipoIcon}</td>
+          <td><span class="badge badge-lightblue">${it.categoria}</span></td>
+          <td>${it.descricao||''}</td>
+          <td>${it.membroNome||''}</td>
+          <td>${it.forma||''}</td>
+          <td class="text-end ${valClass}">${fmtBRL(it.valor)}</td>
+          <td class="text-end">
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-secondary" data-action="edit" title="Editar"><i class="bi-pencil"></i></button>
+              <button class="btn btn-outline-danger" data-action="del" title="Excluir"><i class="bi-trash"></i></button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function sumBy(arr, pred){ return arr.reduce((acc,it)=> acc + (pred(it)||0), 0); }
+
+    function renderSummary(){
+      const now = new Date();
+      function calcRange(start, end){
+        const filtered = lanc.filter(it=>{ const d = new Date(it.data+'T12:00:00'); return d>=start && d<=end; });
+        const rec = sumBy(filtered, it=> it.tipo==='receita' ? Number(it.valor) : 0);
+        const des = sumBy(filtered, it=> it.tipo==='despesa' ? Number(it.valor) : 0);
+        return {rec, des, saldo: rec-des};
+      }
+      const rHoje = calcRange(new Date(now.getFullYear(), now.getMonth(), now.getDate()), new Date(now.getFullYear(), now.getMonth(), now.getDate(),23,59,59,999));
+      const rSemana = calcRange(mondayOfWeek(now), sundayOfWeek(now));
+      const rMes = calcRange(new Date(now.getFullYear(), now.getMonth(), 1), new Date(now.getFullYear(), now.getMonth()+1, 0,23,59,59,999));
+      const rTotal = calcRange(new Date(2000,0,1), new Date(2100,0,1));
+
+      sumHoje.textContent = fmtBRL(rHoje.saldo); sumHoje.className = 'value ' + (rHoje.saldo>=0 ? 'pos':'neg'); sumHojeDesc.textContent = `${fmtBRL(rHoje.rec)} - ${fmtBRL(rHoje.des)}`;
+      sumSemana.textContent = fmtBRL(rSemana.saldo); sumSemana.className = 'value ' + (rSemana.saldo>=0 ? 'pos':'neg'); sumSemanaDesc.textContent = `${fmtBRL(rSemana.rec)} - ${fmtBRL(rSemana.des)}`;
+      sumMes.textContent = fmtBRL(rMes.saldo); sumMes.className = 'value ' + (rMes.saldo>=0 ? 'pos':'neg'); sumMesDesc.textContent = `${fmtBRL(rMes.rec)} - ${fmtBRL(rMes.des)}`;
+      sumTotal.textContent = fmtBRL(rTotal.saldo); sumTotal.className = 'value ' + (rTotal.saldo>=0 ? 'pos':'neg'); sumTotalDesc.textContent = `${fmtBRL(rTotal.rec)} - ${fmtBRL(rTotal.des)}`;
+    }
+
+    function renderCharts(){
+      const now = new Date();
+      const labels = [], receitas = [], despesas = [];
+      for (let i=11;i>=0;i--){
+        const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+        const start = new Date(d.getFullYear(), d.getMonth(), 1);
+        const end = new Date(d.getFullYear(), d.getMonth()+1, 0, 23,59,59,999);
+        labels.push(d.toLocaleDateString('pt-BR', {month:'short', year:'2-digit'}));
+        const rec = sumBy(lanc, it=>{ const di = new Date(it.data+'T12:00:00'); return (it.tipo==='receita' && di>=start && di<=end) ? Number(it.valor) : 0; });
+        const des = sumBy(lanc, it=>{ const di = new Date(it.data+'T12:00:00'); return (it.tipo==='despesa' && di>=start && di<=end) ? Number(it.valor) : 0; });
+        receitas.push(rec); despesas.push(des);
+      }
+
+      const recs = filterForTipo('receita');
+      const dess = filterForTipo('despesa');
+
+      function groupByCat(arr){
+        const map = {};
+        for (const it of arr){ const k = it.categoria || 'Outra'; map[k] = (map[k]||0) + Number(it.valor||0); }
+        const entries = Object.entries(map).sort((a,b)=> b[1]-a[1]);
+        const top = entries.slice(0,6);
+        const rest = entries.slice(6).reduce((acc, [,v])=> acc+v, 0);
+        if (rest>0) top.push(['Outros', rest]);
+        return { labels: top.map(e=>e[0]), data: top.map(e=>e[1]) };
+      }
+      const gRec = groupByCat(recs);
+      const gDes = groupByCat(dess);
+
+      if (chart12) chart12.destroy();
+      if (chartCatReceitas) chartCatReceitas.destroy();
+      if (chartDespesasMain) chartDespesasMain.destroy();
+
+      chart12 = new Chart(document.getElementById('chart12'), {
+        type:'bar',
+        data:{ labels, datasets:[ {label:'Receitas', data:receitas}, {label:'Despesas', data:despesas} ] },
+        options:{ responsive:true, maintainAspectRatio:false, resizeDelay:200, animation:{duration:250}, scales:{y:{beginAtZero:true}}, plugins:{legend:{position:'bottom'}} }
+      });
+
+      chartCatReceitas = new Chart(document.getElementById('chartCatReceitas'), {
+        type:'doughnut',
+        data:{ labels:gRec.labels, datasets:[{ data:gRec.data }] },
+        options:{ responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{ position:'bottom' } } }
+      });
+
+      chartDespesasMain = new Chart(document.getElementById('chartDespesasMain'), {
+        type:'doughnut',
+        data:{ labels:gDes.labels, datasets:[{ data:gDes.data }] },
+        options:{ responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{ position:'bottom' } } }
+      });
+    }
+
+    [q, tipo, categoria, forma].forEach(el=> el.addEventListener('input', ()=>{ updateChips(); renderTable(); renderCharts(); }));
+    periodo.addEventListener('change', ()=>{ const custom = periodo.value==='custom'; from.disabled = to.disabled = !custom; updateChips(); renderTable(); renderCharts(); });
+    [from, to].forEach(el=> el.addEventListener('change', ()=>{ updateChips(); renderTable(); renderCharts(); }));
+
+    btnAdd.addEventListener('click', ()=>{ modalTitle.textContent='Novo lançamento'; document.getElementById('formLanc').reset(); lId.value=''; lData.value=todayStr(); lReceita.checked=true; lCategoria.value='Serviço'; modal.show(); });
+    btnReset.addEventListener('click', ()=>{ if (!confirm('Zerar todos os lançamentos financeiros?')) return; lanc=[]; save(); renderAll(); });
+    document.querySelector('table').addEventListener('click', (e)=>{
+      const tr = e.target.closest('tr[data-id]'); const btn = e.target.closest('button[data-action]'); if (!tr || !btn) return;
+      const id = tr.getAttribute('data-id'); const it = lanc.find(x=>x.id===id); if (!it) return;
+      if (btn.getAttribute('data-action')==='edit'){
+        modalTitle.textContent='Editar lançamento';
+        lId.value = it.id; (it.tipo==='receita'? lReceita : document.getElementById('lDespesa')).checked = true;
+        lCategoria.value=it.categoria; lDescricao.value=it.descricao||''; lValor.value=it.valor; lData.value=it.data;
+        lForma.value=it.forma||'Dinheiro'; lMembro.value=it.membroId||''; lCortes.value=it.cortes||0; lProdutosQtd.value=it.produtosQtd||0; lTicket.value=it.ticket||0;
+        modal.show();
+      } else {
+        if (!confirm('Excluir este lançamento?')) return;
+        lanc = lanc.filter(x=>x.id!==id); save(); renderAll();
+      }
+    });
+
+    btnSaveLanc.addEventListener('click', ()=>{
+      const tipoSel = document.querySelector('input[name="lTipo"]:checked').value;
+      const obj = {
+        id: lId.value || ('id-'+Date.now()+Math.random().toString(16).slice(2)),
+        tipo: tipoSel, categoria: lCategoria.value, descricao: (lDescricao.value||'').trim(),
+        valor: Number(lValor.value||0), data: lData.value||todayStr(), forma: lForma.value,
+        membroId: lMembro.value || '', membroNome: lMembro.value ? (lMembro.options[lMembro.selectedIndex].text) : '',
+        cortes: Number(lCortes.value||0), produtosQtd: Number(lProdutosQtd.value||0), ticket: Number(lTicket.value||0)
+      };
+      const idx = lanc.findIndex(x=>x.id===obj.id); if (idx>=0) lanc[idx]=obj; else lanc.push(obj);
+      save(); modal.hide(); renderAll();
+    });
+
+    function renderAll(){ updateChips(); renderTable(); renderSummary(); renderCharts(); }
+
+    load(); loadMembersFromEquipe(); renderAll();
+  });
+  </script>
+</body>
+</html>

@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="pt-br" data-bs-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Equipe — Amaral BarberShop (v5)</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <style>
+    :root { --bs-primary:#0d6efd; }
+    body { background:#f8fafc; }
+
+    /* Navbar */
+    .navbar { backdrop-filter:saturate(180%) blur(8px); background:rgba(255,255,255,.9)!important; box-shadow:0 2px 12px rgba(0,0,0,.06); }
+    .navbar-brand { font-weight:700; letter-spacing:.3px; color:#0f172a; display:flex; align-items:center; gap:.5rem; }
+    .nav-link { display:flex; align-items:center; gap:.5rem; font-weight:500; color:#0f172a; padding:.5rem .75rem; border-radius:.75rem; transition:.2s; }
+    .nav-link:hover { background:rgba(13,110,253,.08); color:var(--bs-primary); }
+    .nav-link.active { color:#0d6efd; background:rgba(13,110,253,.12); box-shadow:inset 0 0 0 1px rgba(13,110,253,.25); }
+
+    /* Layout */
+    .content { max-width:1100px; margin:2rem auto; padding:0 1rem; }
+    .two-col { display:grid; grid-template-columns: 1fr; gap:1rem; }
+    @media (min-width: 992px){ .two-col { grid-template-columns: 2fr 1fr; } }
+
+    /* Cards de membro */
+    .member-item { background:#fff; border:1px solid rgba(2,6,23,.06); border-radius:1rem; padding:.9rem; box-shadow:0 6px 18px rgba(0,0,0,.05); display:flex; gap:.9rem; align-items:flex-start; }
+    .member-item:hover { box-shadow:0 8px 28px rgba(0,0,0,.07); }
+    .member-item .avatar { width:56px; height:56px; border-radius:50%; object-fit:cover; }
+    .member-item .name-row { display:flex; align-items:center; gap:.5rem; }
+    .badge-status { border:1px solid currentColor; padding:.2rem .5rem; border-radius:999px; font-size:.75rem; }
+    .badge-ativo { color:#16a34a; border-color:#16a34a; }
+    .badge-ferias { color:#ef4444; border-color:#ef4444; }
+
+    /* Metas (coluna direita) */
+    .goals-card { position:sticky; top:88px; }
+    .goals-card .form-floating > label > i { opacity:.6; margin-right:.35rem; }
+
+    .empty-state { border:2px dashed rgba(13,110,253,.3); border-radius:1rem; padding:1.25rem; text-align:center; color:#64748b; background:#fff; }
+
+    /* Auxiliar p/ integração com Configurações */
+    #team-list { display:none; }
+
+    .progress { height: 8px; }
+    .progress-label { font-size: .8rem; color:#475569; }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg bg-body border-0 sticky-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#"><i class="bi-scissors"></i> Amaral BarberShop</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Alternar navegação">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMain">
+        <ul class="navbar-nav ms-auto align-items-lg-center">
+          <li class="nav-item"><a class="nav-link" href="index.html"><i class="bi-house-door"></i> Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="financeiro.html"><i class="bi-cash-stack"></i> Financeiro</a></li>
+          <li class="nav-item"><a class="nav-link active" aria-current="page" href="#"><i class="bi-people"></i> Equipe</a></li>
+          <li class="nav-item"><a class="nav-link" href="agendamentos.html"><i class="bi-calendar-event"></i> Agendamentos</a></li>
+          <li class="nav-item"><a class="nav-link" href="configuracoes.html"><i class="bi-gear"></i> Configurações</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="content">
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+      <h5 class="mb-0"><i class="bi-people me-1"></i> Equipe</h5>
+      <div class="ms-auto d-flex flex-wrap gap-2">
+        <div class="input-group" style="min-width:260px;">
+          <span class="input-group-text bg-white"><i class="bi-search"></i></span>
+          <input id="searchInput" type="search" class="form-control" placeholder="Buscar por nome, função…" />
+        </div>
+        <button id="btnAdd" class="btn btn-primary"><i class="bi-plus-lg"></i> Adicionar</button>
+        <button id="btnReset" class="btn btn-outline-danger"><i class="bi-trash3"></i> Zerar</button>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <!-- Coluna esquerda: lista vertical de membros -->
+      <div>
+        <div id="list" class="d-grid gap-2"><!-- itens via JS --></div>
+        <!-- Lista oculta para integração com Configurações (parse estático) -->
+        <ul id="team-list"></ul>
+      </div>
+
+      <!-- Coluna direita: metas (salão e individuais) -->
+      <aside class="goals-card">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="card-title mb-3"><i class="bi-graph-up-arrow me-1"></i> Metas</h6>
+
+            <!-- Tabs: Salão x Individuais -->
+            <ul class="nav nav-pills mb-3" id="goalsTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tabSalaoBtn" data-bs-toggle="pill" data-bs-target="#paneSalao" type="button" role="tab">Salão</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tabIndBtn" data-bs-toggle="pill" data-bs-target="#paneInd" type="button" role="tab">Individuais</button>
+              </li>
+            </ul>
+
+            <!-- Frequência -->
+            <div class="btn-group w-100 mb-3" role="group" aria-label="Frequência">
+              <input type="radio" class="btn-check" name="freq" id="freqDiaria" value="diaria" checked>
+              <label class="btn btn-outline-primary" for="freqDiaria">Diárias</label>
+              <input type="radio" class="btn-check" name="freq" id="freqSemanal" value="semanal">
+              <label class="btn btn-outline-primary" for="freqSemanal">Semanais</label>
+              <input type="radio" class="btn-check" name="freq" id="freqMensal" value="mensal">
+              <label class="btn btn-outline-primary" for="freqMensal">Mensais</label>
+            </div>
+
+            <div class="tab-content">
+              <!-- Metas do salão -->
+              <div class="tab-pane fade show active" id="paneSalao" role="tabpanel">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <div class="form-floating">
+                      <input type="number" min="0" id="salaoCortes" class="form-control" placeholder="Cortes" />
+                      <label for="salaoCortes"><i class="bi-scissors"></i> Cortes</label>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="form-floating">
+                      <input type="number" min="0" step="0.01" id="salaoFaturamento" class="form-control" placeholder="Faturamento (R$)" />
+                      <label for="salaoFaturamento"><i class="bi-currency-dollar"></i> Faturamento (R$)</label>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="form-floating">
+                      <input type="number" min="0" id="salaoProdutos" class="form-control" placeholder="Produtos" />
+                      <label for="salaoProdutos"><i class="bi-bag"></i> Produtos</label>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="form-floating">
+                      <input type="number" min="0" step="0.01" id="salaoTicket" class="form-control" placeholder="Ticket médio (R$)" />
+                      <label for="salaoTicket"><i class="bi-receipt"></i> Ticket médio (R$)</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Progresso do Salão (renderizado via JS) -->
+                <div id="salaoProgress" class="mt-3"></div>
+              </div>
+
+              <!-- Metas individuais -->
+              <div class="tab-pane fade" id="paneInd" role="tabpanel">
+                <div class="mb-3">
+                  <label class="form-label">Selecionar membro</label>
+                  <select id="selectMemberGoals" class="form-select">
+                    <option value="">Selecione um membro…</option>
+                  </select>
+                </div>
+                <div class="row g-3">
+                  <div class="col-12">
+                    <div class="form-floating">
+                      <input type="number" min="0" id="indCortes" class="form-control" placeholder="Cortes" disabled />
+                      <label for="indCortes"><i class="bi-scissors"></i> Cortes</label>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="form-floating">
+                      <input type="number" min="0" step="0.01" id="indFaturamento" class="form-control" placeholder="Faturamento (R$)" disabled />
+                      <label for="indFaturamento"><i class="bi-currency-dollar"></i> Faturamento (R$)</label>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="form-floating">
+                      <input type="number" min="0" id="indProdutos" class="form-control" placeholder="Produtos" disabled />
+                      <label for="indProdutos"><i class="bi-bag"></i> Produtos</label>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="form-floating">
+                      <input type="number" min="0" step="0.01" id="indTicket" class="form-control" placeholder="Ticket médio (R$)" disabled />
+                      <label for="indTicket"><i class="bi-receipt"></i> Ticket médio (R$)</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="small text-secondary mt-2">As metas individuais são salvas automaticamente por membro.</div>
+              </div>
+            </div>
+
+            <div class="small text-secondary mt-3">As metas são salvas automaticamente no navegador (localStorage).</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Modal: Adicionar/Editar Membro -->
+  <div class="modal fade" id="memberModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title"><i class="bi-person-plus me-1"></i> <span id="modalTitle">Novo membro</span></h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <form id="memberForm" class="row g-3">
+            <input type="hidden" id="memId" />
+            <div class="col-12">
+              <div class="form-floating">
+                <input type="text" id="memNome" class="form-control" placeholder="Nome" required />
+                <label for="memNome"><i class="bi-person"></i> Nome</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="form-floating">
+                <input type="text" id="memFuncao" class="form-control" placeholder="Função (ex.: Barbeiro)" />
+                <label for="memFuncao"><i class="bi-briefcase"></i> Função</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input type="tel" id="memTelefone" class="form-control" placeholder="Telefone" />
+                <label for="memTelefone"><i class="bi-telephone"></i> Telefone</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input type="email" id="memEmail" class="form-control" placeholder="E-mail" />
+                <label for="memEmail"><i class="bi-envelope"></i> E-mail</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="form-floating">
+                <input type="url" id="memFoto" class="form-control" placeholder="URL da foto (opcional)" />
+                <label for="memFoto"><i class="bi-image"></i> URL da foto (opcional)</label>
+              </div>
+            </div>
+            <div class="col-12 d-flex align-items-center gap-2">
+              <span class="small text-secondary">Status:</span>
+              <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="memStatus" id="statusAtivo" value="ativo" checked>
+                <label class="btn btn-outline-success" for="statusAtivo"><i class="bi-check-circle"></i> Ativo</label>
+                <input type="radio" class="btn-check" name="memStatus" id="statusFerias" value="ferias">
+                <label class="btn btn-outline-danger" for="statusFerias"><i class="bi-umbrella"></i> Em férias</label>
+              </div>
+            </div>
+
+            <!-- Metas individuais no modal -->
+            <div class="col-12">
+              <hr/>
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="small text-secondary"><i class="bi-bullseye"></i> Metas individuais</span>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Frequência metas (modal)">
+                  <input type="radio" class="btn-check" name="modalFreq" id="mFreqD" value="diaria" checked>
+                  <label class="btn btn-outline-primary" for="mFreqD">Diárias</label>
+                  <input type="radio" class="btn-check" name="modalFreq" id="mFreqS" value="semanal">
+                  <label class="btn btn-outline-primary" for="mFreqS">Semanais</label>
+                  <input type="radio" class="btn-check" name="modalFreq" id="mFreqM" value="mensal">
+                  <label class="btn btn-outline-primary" for="mFreqM">Mensais</label>
+                </div>
+              </div>
+              <div class="row g-3" id="modalGoalsWrap">
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    <input type="number" min="0" id="mCortes" class="form-control" placeholder="Cortes" />
+                    <label for="mCortes"><i class="bi-scissors"></i> Cortes</label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    <input type="number" min="0" step="0.01" id="mFaturamento" class="form-control" placeholder="Faturamento (R$)" />
+                    <label for="mFaturamento"><i class="bi-currency-dollar"></i> Faturamento (R$)</label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    <input type="number" min="0" id="mProdutos" class="form-control" placeholder="Produtos" />
+                    <label for="mProdutos"><i class="bi-bag"></i> Produtos</label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    <input type="number" min="0" step="0.01" id="mTicket" class="form-control" placeholder="Ticket médio (R$)" />
+                    <label for="mTicket"><i class="bi-receipt"></i> Ticket médio (R$)</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button id="btnSaveMember" class="btn btn-primary"><i class="bi-save"></i> Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    // ===== Estado e Storage =====
+    const STORAGE_KEY = 'abs_equipe_v5'; // versão nova (zerada)
+    try { localStorage.removeItem('abs_equipe_v4'); localStorage.removeItem('abs_equipe_v3'); localStorage.removeItem('abs_equipe_v2'); localStorage.removeItem('abs_equipe_v1'); } catch{}
+
+    let state = {
+      membros: [],
+      metas: {},
+      progresso: { individuais: {} }
+    };
+
+    function load(){
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) { try { state = JSON.parse(raw) || state; } catch{} }
+    }
+    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); syncHiddenList(); }
+
+    // ===== Estruturas de Metas =====
+    const DEFAULT_GOALS = { cortes:'', faturamento:'', produtos:'', ticket:'' };
+    function ensureGoalsStructure(){
+      state.metas ||= {};
+      state.metas.sala ||= { diaria:{...DEFAULT_GOALS}, semanal:{...DEFAULT_GOALS}, mensal:{...DEFAULT_GOALS} };
+      state.metas.individuais ||= {};
+    }
+
+    // ===== Util =====
+    function uid(){ return (self.crypto?.randomUUID?.() || ('id-' + Date.now() + '-' + Math.round(Math.random()*1e9))); }
+    function avatarUrl(nome){ const seed = encodeURIComponent(nome || 'avatar'); return `https://api.dicebear.com/8.x/initials/svg?seed=${seed}`; }
+    function fmtBRL(v){ const n = Number(v||0); try { return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n); } catch { return `R$ ${n.toFixed(2)}`; } }
+    function syncHiddenList(){ const ul = document.getElementById('team-list'); ul.innerHTML = ''; state.membros.forEach(m => { const li = document.createElement('li'); li.textContent = m.nome; ul.appendChild(li); }); }
+
+    // ===== Render Lista =====
+    let currentFreq = 'diaria';
+    function render(list = state.membros){
+      const wrap = document.getElementById('list');
+      wrap.innerHTML = '';
+      if (!list.length){
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = `<div class="mb-2"><i class="bi-person-plus"></i></div><div>Nenhum membro cadastrado. Clique em <strong>Adicionar</strong> para começar. (Backups são em Configurações)</div>`;
+        wrap.appendChild(empty); return;
+      }
+      list.forEach(m => {
+        const mGoals = state.metas.individuais[m.id]?.[currentFreq] || {};
+        const mProg  = state.progresso?.individuais?.[m.id]?.[currentFreq] || {};
+
+        const goalCuts = Number(mGoals.cortes || 0);
+        const doneCuts = Number(mProg.cortesRealizados || 0);
+        const pctCuts = goalCuts > 0 ? Math.min(100, Math.round((doneCuts/goalCuts)*100)) : 0;
+
+        const goalFat = Number(mGoals.faturamento || 0);
+        const doneFat = Number(mProg.faturamentoRealizado || 0);
+        const pctFat = goalFat > 0 ? Math.min(100, Math.round((doneFat/goalFat)*100)) : 0;
+
+        const goalProd = Number(mGoals.produtos || 0);
+        const doneProd = Number(mProg.produtosVendidos || 0);
+        const pctProd = goalProd > 0 ? Math.min(100, Math.round((doneProd/goalProd)*100)) : 0;
+
+        const goalTicket = Number(mGoals.ticket || 0);
+        const doneTicket = Number(mProg.ticketRealizado || 0);
+        const pctTicket = goalTicket > 0 ? Math.min(100, Math.round((doneTicket/goalTicket)*100)) : 0;
+
+        const freqLabel = currentFreq==='diaria'?'diária':(currentFreq==='semanal'?'semanal':'mensal');
+
+        const item = document.createElement('div'); item.className = 'member-item'; item.dataset.id = m.id;
+        item.innerHTML = `
+          <img class="avatar" src="${avatarUrl(m.nome)}" alt="${m.nome}" />
+          <div class="flex-grow-1">
+            <div class="name-row">
+              <span class="fw-semibold" data-equipe-nome>${m.nome}</span>
+              <span class="badge-status ${m.status==='ativo'?'badge-ativo':'badge-ferias'}">${m.status==='ativo'?'Ativo':'Em férias'}</span>
+            </div>
+            <div class="text-secondary small">${m.funcao || ''}</div>
+            <div class="small mt-2">
+              ${m.telefone ? `<i class='bi-telephone me-1'></i>${m.telefone}` : ''}
+              ${m.email ? `<div><i class='bi-envelope me-1'></i>${m.email}</div>` : ''}
+            </div>
+
+            <div class="mt-3">
+              <div class="d-flex justify-content-between progress-label mb-1">
+                <span>Progresso (cortes • ${freqLabel})</span>
+                <span class="fw-semibold">${doneCuts}/${goalCuts} (${pctCuts}%)</span>
+              </div>
+              <div class="progress"><div class="progress-bar" style="width:${pctCuts}%"></div></div>
+            </div>
+
+            <div class="mt-2">
+              <div class="d-flex justify-content-between progress-label mb-1">
+                <span>Progresso (faturamento • ${freqLabel})</span>
+                <span class="fw-semibold">${fmtBRL(doneFat)} / ${fmtBRL(goalFat)} (${pctFat}%)</span>
+              </div>
+              <div class="progress"><div class="progress-bar" style="width:${pctFat}%"></div></div>
+            </div>
+
+            <div class="mt-2">
+              <div class="d-flex justify-content-between progress-label mb-1">
+                <span>Progresso (produtos • ${freqLabel})</span>
+                <span class="fw-semibold">${doneProd}/${goalProd} (${pctProd}%)</span>
+              </div>
+              <div class="progress"><div class="progress-bar" style="width:${pctProd}%"></div></div>
+            </div>
+
+            <div class="mt-2">
+              <div class="d-flex justify-content-between progress-label mb-1">
+                <span>Progresso (ticket médio • ${freqLabel})</span>
+                <span class="fw-semibold">${fmtBRL(doneTicket)} / ${fmtBRL(goalTicket)} (${pctTicket}%)</span>
+              </div>
+              <div class="progress"><div class="progress-bar" style="width:${pctTicket}%"></div></div>
+            </div>
+
+          </div>
+          <div class="dropstart"> 
+            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown"><i class="bi-three-dots"></i></button>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="#" data-action="edit"><i class="bi-pencil me-1"></i> Editar</a></li>
+              <li><a class="dropdown-item" href="#" data-action="goals"><i class="bi-bullseye me-1"></i> Metas</a></li>
+              <li><a class="dropdown-item" href="#" data-action="progress"><i class="bi-clipboard2-data me-1"></i> Atualizar progresso</a></li>
+              <li><a class="dropdown-item" href="#" data-action="toggle"><i class="bi-toggle2-on me-1"></i> Alternar status</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item text-danger" href="#" data-action="delete"><i class="bi-trash me-1"></i> Remover</a></li>
+            </ul>
+          </div>`;
+        wrap.appendChild(item);
+      });
+    }
+
+    // ===== Busca =====
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', (e)=>{
+      const q = e.target.value.toLowerCase();
+      const filtered = state.membros.filter(m => `${m.nome} ${m.funcao}`.toLowerCase().includes(q));
+      render(filtered);
+    });
+
+    // ===== Modal Add/Editar =====
+    const memberModalEl = document.getElementById('memberModal');
+    const memberModal = new bootstrap.Modal(memberModalEl);
+    const memId = document.getElementById('memId');
+    const memNome = document.getElementById('memNome');
+    const memFuncao = document.getElementById('memFuncao');
+    const memTelefone = document.getElementById('memTelefone');
+    const memEmail = document.getElementById('memEmail');
+    const memFoto = document.getElementById('memFoto');
+
+    const btnAdd = document.getElementById('btnAdd');
+    const btnReset = document.getElementById('btnReset');
+    const btnSaveMember = document.getElementById('btnSaveMember');
+
+    btnAdd.addEventListener('click', ()=>{
+      document.getElementById('modalTitle').textContent = 'Novo membro';
+      document.getElementById('memberForm').reset();
+      memId.value = '';
+      document.getElementById('statusAtivo').checked = true;
+      modalGoalFreq = 'diaria'; document.getElementById('mFreqD').checked = true; applyModalGoals('__novo__');
+      memberModal.show();
+    });
+
+    btnReset.addEventListener('click', ()=>{
+      if (!confirm('Zerar equipe e metas?')) return;
+      state = { membros: [], metas: { sala:{ diaria:{...DEFAULT_GOALS}, semanal:{...DEFAULT_GOALS}, mensal:{...DEFAULT_GOALS} }, individuais:{} }, progresso:{ individuais:{} } };
+      save(); render(); refreshMemberSelect(); applySalaoUI(); applyIndUI();
+    });
+
+    document.getElementById('list').addEventListener('click', (e)=>{
+      const item = e.target.closest('.member-item');
+      const actionLink = e.target.closest('a[data-action]');
+      if (!item || !actionLink) return;
+      e.preventDefault();
+      const id = item.dataset.id; const action = actionLink.dataset.action;
+      const m = state.membros.find(x=>x.id===id);
+      if (!m) return;
+      if (action==='edit'){
+        document.getElementById('modalTitle').textContent = 'Editar membro';
+        memId.value = m.id; memNome.value = m.nome; memFuncao.value = m.funcao || '';
+        memTelefone.value = m.telefone || ''; memEmail.value = m.email || ''; memFoto.value = m.foto || '';
+        document.getElementById(m.status==='ativo'?'statusAtivo':'statusFerias').checked = true;
+        modalGoalFreq = 'diaria'; document.getElementById('mFreqD').checked = true; applyModalGoals(m.id);
+        memberModal.show();
+      }
+      if (action==='goals'){
+        focusGoalsForMember(id);
+      }
+      if (action==='progress'){
+        state.progresso.individuais[id] ||= { diaria:{}, semanal:{}, mensal:{} };
+        // cortes
+        const currCuts = Number(state.progresso.individuais[id][currentFreq]?.cortesRealizados || 0);
+        const inpCuts = prompt(`Cortes realizados (${currentFreq}) para ${m.nome}:`, String(currCuts));
+        if (inpCuts!==null){ state.progresso.individuais[id][currentFreq].cortesRealizados = Math.max(0, Number(inpCuts)||0); }
+        // faturamento
+        const currFat = Number(state.progresso.individuais[id][currentFreq]?.faturamentoRealizado || 0);
+        const inpFat = prompt(`Faturamento realizado (R$) (${currentFreq}) para ${m.nome}:`, String(currFat));
+        if (inpFat!==null){ state.progresso.individuais[id][currentFreq].faturamentoRealizado = Math.max(0, Number(inpFat)||0); }
+        // produtos
+        const currProd = Number(state.progresso.individuais[id][currentFreq]?.produtosVendidos || 0);
+        const inpProd = prompt(`Produtos vendidos (${currentFreq}) para ${m.nome}:`, String(currProd));
+        if (inpProd!==null){ state.progresso.individuais[id][currentFreq].produtosVendidos = Math.max(0, Number(inpProd)||0); }
+        // ticket médio (valor em R$)
+        const currTicket = Number(state.progresso.individuais[id][currentFreq]?.ticketRealizado || 0);
+        const inpTicket = prompt(`Ticket médio realizado (R$) (${currentFreq}) para ${m.nome}:`, String(currTicket));
+        if (inpTicket!==null){ state.progresso.individuais[id][currentFreq].ticketRealizado = Math.max(0, Number(inpTicket)||0); }
+
+        save(); render(); applySalaoUI();
+      }
+      if (action==='delete'){
+        if (confirm('Remover este membro?')){ 
+          delete state.metas.individuais[id];
+          if (state.progresso?.individuais) delete state.progresso.individuais[id];
+          state.membros = state.membros.filter(x=>x.id!==id); save(); render(); refreshMemberSelect(); applyIndUI(); applySalaoUI();
+        }
+      }
+      if (action==='toggle'){
+        m.status = m.status==='ativo' ? 'ferias' : 'ativo'; save(); render(); applySalaoUI();
+      }
+    });
+
+    btnSaveMember.addEventListener('click', ()=>{
+      const nome = memNome.value.trim(); if (!nome) { memNome.focus(); return; }
+      const idVal = memId.value || uid();
+      const obj = {
+        id: idVal,
+        nome,
+        funcao: memFuncao.value.trim(),
+        telefone: memTelefone.value.trim(),
+        email: memEmail.value.trim(),
+        foto: memFoto.value.trim(),
+        status: document.querySelector('input[name="memStatus"]:checked')?.value || 'ativo'
+      };
+      const idx = state.membros.findIndex(m=>m.id===obj.id);
+      if (idx>=0) state.membros[idx] = obj; else state.membros.push(obj);
+
+      // salvar metas individuais do modal (na frequência selecionada no modal)
+      saveModalGoals(idVal);
+      if (state.metas.individuais['__novo__']) delete state.metas.individuais['__novo__'];
+
+      save(); render(); refreshMemberSelect(); memberModal.hide(); applySalaoUI();
+    });
+
+    // ===== Metas: Salão e Individuais =====
+    const freqRadios = document.querySelectorAll('input[name="freq"]');
+    freqRadios.forEach(r => r.addEventListener('change', ()=>{
+      currentFreq = document.querySelector('input[name="freq"]:checked').value;
+      applySalaoUI(); applyIndUI(); render();
+    }));
+
+    // --- Salão ---
+    const salaoCortes = document.getElementById('salaoCortes');
+    const salaoFaturamento = document.getElementById('salaoFaturamento');
+    const salaoProdutos = document.getElementById('salaoProdutos');
+    const salaoTicket = document.getElementById('salaoTicket');
+    const salaoProgress = document.getElementById('salaoProgress');
+
+    function aggregateSalonProgress(){
+      let totCortes = 0, totFat = 0, totProd = 0;
+      state.membros.forEach(m=>{
+        const pr = state.progresso?.individuais?.[m.id]?.[currentFreq];
+        if (!pr) return;
+        totCortes += Number(pr.cortesRealizados || 0);
+        totFat    += Number(pr.faturamentoRealizado || 0);
+        totProd   += Number(pr.produtosVendidos || 0);
+      });
+      const ticketReal = totCortes>0 ? (totFat / totCortes) : 0;
+      return { cortes: totCortes, faturamento: totFat, produtos: totProd, ticket: ticketReal };
+    }
+
+    function applySalaoUI(){
+      ensureGoalsStructure();
+      const g = state.metas.sala[currentFreq] || DEFAULT_GOALS;
+      salaoCortes.value = g.cortes || '';
+      salaoFaturamento.value = g.faturamento || '';
+      salaoProdutos.value = g.produtos || '';
+      salaoTicket.value = g.ticket || '';
+      renderSalaoProgress();
+    }
+
+    function renderSalaoProgress(){
+      const g = state.metas.sala[currentFreq] || DEFAULT_GOALS;
+      const done = aggregateSalonProgress();
+
+      const goalCuts = Number(g.cortes || 0);
+      const goalFat  = Number(g.faturamento || 0);
+      const goalProd = Number(g.produtos || 0);
+      const goalTic  = Number(g.ticket || 0);
+
+      const pctCuts = goalCuts>0 ? Math.min(100, Math.round((done.cortes/goalCuts)*100)) : 0;
+      const pctFat  = goalFat>0  ? Math.min(100, Math.round((done.faturamento/goalFat)*100)) : 0;
+      const pctProd = goalProd>0 ? Math.min(100, Math.round((done.produtos/goalProd)*100)) : 0;
+      const pctTic  = goalTic>0  ? Math.min(100, Math.round((done.ticket/goalTic)*100)) : 0;
+
+      const freqLabel = currentFreq==='diaria'?'diária':(currentFreq==='semanal'?'semanal':'mensal');
+
+      salaoProgress.innerHTML = `
+        <div class="mt-3 pt-2 border-top">
+          <div class="small text-secondary mb-2"><i class="bi-speedometer2 me-1"></i> Progresso do salão (${freqLabel})</div>
+
+          <div class="mb-2">
+            <div class="d-flex justify-content-between progress-label mb-1"><span>Cortes</span><span class="fw-semibold">${done.cortes}/${goalCuts} (${pctCuts}%)</span></div>
+            <div class="progress"><div class="progress-bar" style="width:${pctCuts}%"></div></div>
+          </div>
+
+          <div class="mb-2">
+            <div class="d-flex justify-content-between progress-label mb-1"><span>Faturamento</span><span class="fw-semibold">${fmtBRL(done.faturamento)} / ${fmtBRL(goalFat)} (${pctFat}%)</span></div>
+            <div class="progress"><div class="progress-bar" style="width:${pctFat}%"></div></div>
+          </div>
+
+          <div class="mb-2">
+            <div class="d-flex justify-content-between progress-label mb-1"><span>Produtos</span><span class="fw-semibold">${done.produtos}/${goalProd} (${pctProd}%)</span></div>
+            <div class="progress"><div class="progress-bar" style="width:${pctProd}%"></div></div>
+          </div>
+
+          <div>
+            <div class="d-flex justify-content-between progress-label mb-1"><span>Ticket médio</span><span class="fw-semibold">${fmtBRL(done.ticket)} / ${fmtBRL(goalTic)} (${pctTic}%)</span></div>
+            <div class="progress"><div class="progress-bar" style="width:${pctTic}%"></div></div>
+          </div>
+        </div>`;
+    }
+
+    ;[salaoCortes, salaoFaturamento, salaoProdutos, salaoTicket].forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        ensureGoalsStructure();
+        const g = state.metas.sala[currentFreq];
+        g.cortes = salaoCortes.value; g.faturamento = salaoFaturamento.value; g.produtos = salaoProdutos.value; g.ticket = salaoTicket.value;
+        save(); render(); renderSalaoProgress();
+      });
+    });
+
+    // --- Individuais ---
+    const selectMemberGoals = document.getElementById('selectMemberGoals');
+    const indCortes = document.getElementById('indCortes');
+    const indFaturamento = document.getElementById('indFaturamento');
+    const indProdutos = document.getElementById('indProdutos');
+    const indTicket = document.getElementById('indTicket');
+
+    function refreshMemberSelect(){
+      const current = selectMemberGoals.value;
+      selectMemberGoals.innerHTML = '<option value="">Selecione um membro…</option>' + state.membros.map(m=>`<option value="${m.id}">${m.nome}</option>`).join('');
+      if (state.membros.some(m=>m.id===current)) selectMemberGoals.value = current; else selectMemberGoals.value = '';
+    }
+
+    function ensureIndGoals(memberId){
+      ensureGoalsStructure();
+      if (!state.metas.individuais[memberId]){
+        state.metas.individuais[memberId] = { diaria:{...DEFAULT_GOALS}, semanal:{...DEFAULT_GOALS}, mensal:{...DEFAULT_GOALS} };
+      }
+      return state.metas.individuais[memberId];
+    }
+
+    function applyIndUI(){
+      const id = selectMemberGoals.value;
+      const disabled = !id;
+      [indCortes,indFaturamento,indProdutos,indTicket].forEach(i=> i.disabled = disabled);
+      if (!id){ indCortes.value = indFaturamento.value = indProdutos.value = indTicket.value = ''; return; }
+      const g = ensureIndGoals(id)[currentFreq];
+      indCortes.value = g.cortes || '';
+      indFaturamento.value = g.faturamento || '';
+      indProdutos.value = g.produtos || '';
+      indTicket.value = g.ticket || '';
+    }
+
+    selectMemberGoals.addEventListener('change', applyIndUI);
+    ;[indCortes, indFaturamento, indProdutos, indTicket].forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const id = selectMemberGoals.value; if (!id) return;
+        const g = ensureIndGoals(id)[currentFreq];
+        g.cortes = indCortes.value; g.faturamento = indFaturamento.value; g.produtos = indProdutos.value; g.ticket = indTicket.value;
+        save(); render(); renderSalaoProgress();
+      });
+    });
+
+    function focusGoalsForMember(memberId){
+      const tabBtn = document.getElementById('tabIndBtn');
+      const bsTab = new bootstrap.Tab(tabBtn);
+      bsTab.show();
+      setTimeout(()=>{ refreshMemberSelect(); selectMemberGoals.value = memberId; applyIndUI(); }, 60);
+    }
+
+    // ===== Metas no Modal (adicionar/editar) =====
+    let modalGoalFreq = 'diaria';
+    const modalFreqRadios = document.querySelectorAll('input[name="modalFreq"]');
+    const mCortes = document.getElementById('mCortes');
+    const mFaturamento = document.getElementById('mFaturamento');
+    const mProdutos = document.getElementById('mProdutos');
+    const mTicket = document.getElementById('mTicket');
+
+    modalFreqRadios.forEach(r=> r.addEventListener('change', ()=>{
+      modalGoalFreq = document.querySelector('input[name="modalFreq"]:checked').value;
+      const id = memId.value || '__novo__';
+      applyModalGoals(id);
+    }));
+
+    function applyModalGoals(memberId){
+      const id = memberId;
+      ensureGoalsStructure();
+      if (!state.metas.individuais[id]){
+        state.metas.individuais[id] = { diaria:{...DEFAULT_GOALS}, semanal:{...DEFAULT_GOALS}, mensal:{...DEFAULT_GOALS} };
+      }
+      const g = state.metas.individuais[id][modalGoalFreq];
+      mCortes.value = g.cortes || '';
+      mFaturamento.value = g.faturamento || '';
+      mProdutos.value = g.produtos || '';
+      mTicket.value = g.ticket || '';
+    }
+
+    function saveModalGoals(memberId){
+      const id = memberId || '__novo__';
+      ensureGoalsStructure();
+      if (!state.metas.individuais[id]){
+        state.metas.individuais[id] = { diaria:{...DEFAULT_GOALS}, semanal:{...DEFAULT_GOALS}, mensal:{...DEFAULT_GOALS} };
+      }
+      const g = state.metas.individuais[id][modalGoalFreq];
+      g.cortes = mCortes.value; g.faturamento = mFaturamento.value; g.produtos = mProdutos.value; g.ticket = mTicket.value;
+    }
+
+    // ===== Init =====
+    load();
+    ensureGoalsStructure();
+    render();
+    syncHiddenList();
+    refreshMemberSelect();
+    applySalaoUI();
+    applyIndUI();
+  });
+  </script>
+</body>
+</html>
