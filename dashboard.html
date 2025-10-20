@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="pt-br" data-bs-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard • Amaral Barber</title>
+
+  <!-- Bootstrap / Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{
+      --brand:#0d6efd; --brand-600:#0b5ed7; --ink:#0f172a; --subtle:#6b7280;
+      --bg:#f6f8fb; --card:#ffffff; --border:#e6eaf0;
+      --radius:16px; --radius-lg:20px;
+      --shadow-sm:0 6px 18px rgba(2,6,23,.06); --shadow-lg:0 20px 50px rgba(2,6,23,.08);
+      --ctrl-h:48px;
+
+      /* escala suave de espaçamentos */
+      --s-1:.25rem; --s-2:.5rem; --s-3:.75rem; --s-4:1rem; --s-5:1.25rem; --s-6:1.5rem;
+      --s-7:2rem; --s-8:2.5rem; --s-9:3rem; --s-10:3.75rem;
+    }
+    html, body{height:100%; background:var(--bg);}
+
+    /* Sidebar */
+    .sidebar{
+      position:fixed; inset:0 auto 0 0; width:300px;
+      background:linear-gradient(180deg,#ffffff 0%,#f9fbff 100%);
+      border-right:1px solid var(--border); z-index:1040; display:flex; flex-direction:column;
+      box-shadow:6px 0 28px rgba(2,6,23,.06);
+    }
+    .brand{ padding:24px 22px 10px; font-weight:800; color:var(--ink); font-size:1.35rem;}
+    .divider{ margin:10px 16px; border-top:1px dashed var(--border); }
+    .sub{ padding:12px 20px 6px; font-size:.78rem; color:#94a3b8; text-transform:uppercase; font-weight:700; letter-spacing:.08em;}
+    .nav-main{ padding:8px 12px 18px; overflow:auto;}
+    .nav-link{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:var(--radius); color:#0f172a; font-weight:600; transition: transform .2s ease, box-shadow .2s ease, background .2s ease;}
+    .nav-link .bi{ font-size:1.1rem; opacity:.95;}
+    .nav-link:hover{ background: rgba(13,110,253,.09); transform: translateX(3px); box-shadow: var(--shadow-sm);}
+    .nav-link.active{ background: var(--brand); color:#fff; box-shadow:0 10px 28px rgba(13,110,253,.28);}
+    .btn-as-link{ background:none; border:0; }
+
+    /* Collapse */
+    .sidebar.collapsed{ width:84px; }
+    .sidebar.collapsed .sub, .sidebar.collapsed .divider, .sidebar.collapsed .mt-auto{ display:none !important; }
+    .sidebar.collapsed .brand .title{ display:none; }
+    .sidebar .collapse-btn{ margin-left:auto; }
+    .sidebar.collapsed .nav-link{ justify-content:center; padding:12px; }
+    .sidebar.collapsed .nav-link .label{ display:none; }
+
+    .main{ margin-left:300px; min-height:100%;}
+    .main.collapsed{ margin-left:84px; }
+
+    /* Conteúdo */
+    .page{ padding: clamp(var(--s-7), 4vw, var(--s-10)); }
+    .toolbar{ display:flex; flex-wrap:wrap; gap: var(--s-3); align-items:center; }
+    .toolbar > *{ margin:0 !important; }
+
+    .card-soft{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-lg);}
+    .card-soft .card-header{ background:transparent; border-bottom:1px solid var(--border); padding: clamp(var(--s-5), 2vw, var(--s-7)) clamp(var(--s-6), 2.2vw, var(--s-8));}
+    .card-soft .card-body{ padding: clamp(var(--s-6), 3vw, var(--s-8));}
+
+    .form-control, .form-select{ padding:.7rem .9rem; border-radius: 12px; border-color: var(--border); height: var(--ctrl-h);}
+    .form-control:focus, .form-select:focus{ box-shadow:0 0 0 .25rem rgba(13,110,253,.15); border-color: var(--brand-600);}
+    .btn{ border-radius:12px; padding:.65rem 1rem; }
+
+    [data-anim]{ opacity:0; transform: translateY(8px); transition: all .5s ease;}
+    [data-anim].in{ opacity:1; transform: translateY(0);}
+
+    /* KPI */
+    .kpi{ border:1px solid var(--border); border-radius:18px; padding: clamp(var(--s-5), 2vw, var(--s-7)); background:#fff; box-shadow:var(--shadow-sm);}
+    .kpi .label{ color:#64748b; font-size:.9rem; margin-bottom:.2rem;}
+    .kpi .value{ font-weight:800; font-size:1.6rem;}
+    .kpi .delta{ font-size:.9rem; color:#6b7280;}
+    .k-sep{ height:1px; background:var(--border); margin: var(--s-4) 0 var(--s-2); opacity:.8; }
+
+    /* Tabelas */
+    .table th, .table td{ vertical-align: middle; padding: 1rem 1rem; }
+    .badge-date{ background:#eef2ff; color:#3730a3; border:1px solid rgba(99,102,241,.25); padding:.5rem .7rem; }
+
+    /* Ranking list */
+    .rank-item{ display:flex; align-items:center; justify-content:space-between; gap: var(--s-4); padding: .7rem .9rem; border:1px solid var(--border); border-radius:12px; background:#fff; box-shadow:var(--shadow-sm); }
+    .rank-left{ display:flex; align-items:center; gap: .9rem; }
+    .rank-medal{ font-size:1.2rem; width:28px; text-align:center;}
+    .rank-name{ font-weight:700; color:#0f172a; }
+    .rank-meta{ font-size:.85rem; color:#6b7280; }
+    .rank-value{ font-weight:800; }
+
+    @media (max-width: 991.98px){
+      .sidebar{ transform: translateX(-100%); transition: transform .3s ease;}
+      .sidebar.show{ transform: translateX(0);}
+      .main{ margin-left:0;}
+      .main.collapsed{ margin-left:0;}
+      .page{ padding: var(--s-7); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand d-flex align-items-center gap-2">
+      <i class="bi bi-scissors"></i> <span class="title">Amaral Barber</span>
+      <button class="btn btn-light btn-sm collapse-btn" id="btnCollapseSidebar" title="Recolher/expandir" aria-label="Recolher/expandir">
+        <i class="bi bi-layout-sidebar-inset"></i>
+      </button>
+    </div>
+    <hr class="divider">
+    <nav class="nav-main">
+      <button type="button" class="nav-link w-100 text-start btn-as-link" id="btnEarlyAccess" data-bs-toggle="modal" data-bs-target="#earlyModal" title="Acesso Antecipado">
+        <i class="bi bi-lightning-charge"></i> <span class="label">Acesso Antecipado</span>
+      </button>
+      <hr class="divider">
+      <div class="sub">Geral</div>
+      <a class="nav-link active" href="dashboard.html" title="Dashboard"><i class="bi bi-speedometer2"></i> <span class="label">Dashboard</span></a>
+      <a class="nav-link" href="parametros.html" title="Parâmetros"><i class="bi bi-sliders"></i> <span class="label">Parâmetros</span></a>
+      <hr class="divider">
+      <div class="sub">Faturamento</div>
+      <a class="nav-link" href="financeiro.html" title="Financeiro"><i class="bi bi-wallet2"></i> <span class="label">Financeiro</span></a>
+      <a class="nav-link" href="lancamentos.html" title="Lançamentos Diários"><i class="bi bi-journal-text"></i> <span class="label">Lançamentos Diários</span></a>
+      <hr class="divider">
+      <div class="sub">Equipe</div>
+      <a class="nav-link" href="gerenciar.html" title="Gerenciar Equipe"><i class="bi bi-people"></i> <span class="label">Gerenciar</span></a>
+      <a class="nav-link" href="estatisticas.html" title="Estatísticas"><i class="bi bi-graph-up"></i> <span class="label">Estatísticas</span></a>
+    </nav>
+    <div class="mt-auto p-3 small text-secondary">
+      <div class="d-flex align-items-center gap-2"><i class="bi bi-cloud-check"></i><span>Dados salvos no navegador (LocalStorage)</span></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <section class="page container-xxl">
+      <!-- Topbar -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+        <h3 class="mb-3 mb-lg-0 d-flex align-items-center gap-2">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </h3>
+        <div class="toolbar">
+          <span class="text-secondary">Período</span>
+          <select id="fPeriodo" class="form-select" style="width:auto">
+            <option>Diário</option>
+            <option>Semanal</option>
+            <option>Quinzenal</option>
+            <option selected>Mensal</option>
+          </select>
+          <input type="month" id="fMes" class="form-control" style="width:auto">
+          <button class="btn btn-outline-primary" id="btnAplicar"><i class="bi bi-search"></i> Aplicar</button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="row g-4 g-xl-5" data-anim>
+        <div class="col-12 col-md-6 col-xxl-3">
+          <div class="kpi">
+            <div class="label">Faturamento do período</div>
+            <div class="value" id="kFaturamento">R$ 0,00</div>
+            <div class="k-sep"></div>
+            <div class="delta"><i class="bi bi-calendar-check me-1"></i><span id="kDiasUteis">0</span> dias úteis considerados</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xxl-3">
+          <div class="kpi">
+            <div class="label">% da Meta (geral)</div>
+            <div class="value" id="kPctMeta">0%</div>
+            <div class="k-sep"></div>
+            <div class="delta">Meta: <span id="kMetaGlobal">R$ 0,00</span></div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xxl-3">
+          <div class="kpi">
+            <div class="label">Forecast</div>
+            <div class="value" id="kForecast">R$ 0,00</div>
+            <div class="k-sep"></div>
+            <div class="delta">Média diária × dias úteis restantes</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xxl-3">
+          <div class="kpi">
+            <div class="label">Ticket Médio</div>
+            <div class="value" id="kTicket">R$ 0,00</div>
+            <div class="k-sep"></div>
+            <div class="delta"><span id="kAtend">0</span> atendimentos</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficos -->
+      <div class="row g-4 g-xl-5 mt-2">
+        <div class="col-12 col-xl-6">
+          <div class="card card-soft h-100">
+            <div class="card-header"><strong>Metas x Realizado (Categorias)</strong></div>
+            <div class="card-body">
+              <canvas id="chartMetaReal" height="220"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-xl-6">
+          <div class="card card-soft h-100">
+            <div class="card-header"><strong>Distribuição por categoria</strong></div>
+            <div class="card-body">
+              <canvas id="chartPie" height="220"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="card card-soft">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <strong>Evolução diária do faturamento</strong>
+              <button class="btn btn-sm btn-outline-secondary" id="btnCSV"><i class="bi bi-download"></i> Exportar CSV</button>
+            </div>
+            <div class="card-body">
+              <canvas id="chartLinha" height="260"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ranking + Últimos lançamentos -->
+      <div class="row g-4 g-xl-5 mt-2">
+        <div class="col-12 col-xl-6">
+          <div class="card card-soft h-100">
+            <div class="card-header d-flex align-items-center justify-content-between">
+              <div><strong>Ranking por membro</strong> <span class="text-secondary small">(base no período)</span></div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="text-secondary small">Métrica</span>
+                <select id="rankMetric" class="form-select" style="width:auto">
+                  <option value="total" selected>Total</option>
+                  <option value="avulsos">Serv. Avulsos</option>
+                  <option value="extras">Serv. Extras</option>
+                  <option value="cortes">Cortes</option>
+                  <option value="produtos">Produtos</option>
+                  <option value="assinaturas">Assinaturas</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-4">
+                <div class="col-12">
+                  <canvas id="chartRanking" height="260"></canvas>
+                </div>
+                <div class="col-12">
+                  <div class="row row-cols-1 g-3" id="rankList"></div>
+                </div>
+              </div>
+              <div class="small text-secondary mt-2">Passe o mouse na barra do ranking para ver o detalhamento por categoria.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-xl-6">
+          <div class="card card-soft h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <strong>Últimos lançamentos</strong>
+              <a class="btn btn-sm btn-outline-primary" href="lancamentos.html"><i class="bi bi-plus-circle"></i> Novo lançamento</a>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table align-middle">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Membro</th>
+                      <th>Avulsos</th>
+                      <th>Extras</th>
+                      <th>Cortes</th>
+                      <th>Produtos</th>
+                      <th>Assinaturas</th>
+                      <th class="text-end">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyUltimos"></tbody>
+                </table>
+              </div>
+              <div class="text-secondary small">Fonte: Lançamentos Diários</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Early Access Modal -->
+  <div class="modal fade" id="earlyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: var(--radius-lg);">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-lightning-charge"></i> Acesso Antecipado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3 text-secondary">Recursos em beta; obrigado por participar do acesso antecipado.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnQueroTestar"><i class="bi bi-stars"></i> Quero participar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    /* ===== Shortcuts / Consts ===== */
+    const $$ = (s,ctx=document)=>Array.from(ctx.querySelectorAll(s));
+    const $  = (s,ctx=document)=>ctx.querySelector(s);
+
+    const TEAM_KEY   = 'amaralbarber:team:v1';
+    const PARAMS_KEY = 'amaralbarber:parametros:v1';
+    const LANC_KEY   = 'amaralbarber:lancamentos:v1';
+    const METAS_KEY  = 'amaralbarber:metas:v1';
+
+    let equipe=[], params=null, lanc=[], metas=null;
+
+    /* ===== Utils ===== */
+    function fmt(n){ return (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+    function parseNum(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
+    function ymd(d){ return d.toISOString().slice(0,10); }
+    function sum(o){ return (o.avulsos||0)+(o.extras||0)+(o.cortes||0)+(o.produtos||0)+(o.assinaturas||0); }
+    function nameOfMember(id){ const m=(equipe||[]).find(x=> x.id===id); return m? m.nome : '—'; }
+
+    function loadAll(){
+      try{ equipe = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]'); }catch(e){ equipe=[]; }
+      try{ params = JSON.parse(localStorage.getItem(PARAMS_KEY) || 'null'); }catch(e){ params=null; }
+      try{ lanc   = JSON.parse(localStorage.getItem(LANC_KEY)   || '[]'); }catch(e){ lanc=[]; }
+      try{ metas  = JSON.parse(localStorage.getItem(METAS_KEY)  || 'null'); }catch(e){ metas=null; }
+      if(!params){ const d=new Date(); params={periodo:'Mensal', ano:d.getFullYear(), mes:d.getMonth()+1, mesRef:d.getMonth()+1, semana:'1', quinzena:'1', abrirDomingo:false, extras:[]}; }
+      if(!metas){ metas = {globais:{'Diário':{avulsos:0,extras:0,cortes:0,produtos:0,assinaturas:0,global:0},'Semanal':{avulsos:0,extras:0,cortes:0,produtos:0,assinaturas:0,global:0},'Quinzenal':{avulsos:0,extras:0,cortes:0,produtos:0,assinaturas:0,global:0},'Mensal':{avulsos:0,extras:0,cortes:0,produtos:0,assinaturas:0,global:0}}, membros:{'Diário':{},'Semanal':{},'Quinzenal':{},'Mensal':{}}}; localStorage.setItem(METAS_KEY, JSON.stringify(metas)); }
+    }
+
+    function isSunday(d){ return d.getDay()===0; }
+    function isClosedDate(d){ if(!params) return false; const s=ymd(d); return (params.extras||[]).includes(s); }
+    function periodRange(p){
+      const {periodo, ano, mes, mesRef, semana, quinzena} = p;
+      let start, end; const refMonth=(mesRef||mes);
+      const firstDay = new Date(ano, refMonth-1, 1), lastDay = new Date(ano, refMonth, 0);
+      if(periodo==='Diário'){
+        const today=new Date(); const d=new Date(ano,(mes||mesRef)-1,today.getDate());
+        start=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+        end=new Date(start); end.setDate(end.getDate()+1);
+      }else if(periodo==='Semanal'){
+        const w=Number(semana||1);
+        start=new Date(firstDay); start.setDate(1+(w-1)*7);
+        end=new Date(start); end.setDate(start.getDate()+7);
+        const clamp = new Date(ano, refMonth-1, lastDay.getDate()+1);
+        if(end>clamp) end=clamp;
+      }else if(periodo==='Quinzenal'){
+        const q=Number(quinzena||1);
+        start=new Date(firstDay); start.setDate(q===1?1:16);
+        end=new Date(firstDay); end.setDate(q===1?16:lastDay.getDate()+1);
+      }else{ // Mensal
+        start=firstDay; end=new Date(ano, refMonth-1, lastDay.getDate()+1);
+      }
+      return {start,end};
+    }
+    function workingDays(range){
+      const days=[]; const d=new Date(range.start); const openSunday=!!params.abrirDomingo;
+      while(d<range.end){ const closed=isClosedDate(d); if(!closed){ if(openSunday || !isSunday(d)) days.push(new Date(d)); } d.setDate(d.getDate()+1); }
+      return days;
+    }
+
+    /* ===== Aggregations ===== */
+    function aggregatePeriod(range){
+      const start=ymd(range.start), end=ymd(range.end);
+      const tot={avulsos:0,extras:0,cortes:0,produtos:0,assinaturas:0, atend:0};
+      const days=new Map();
+      (lanc||[]).forEach(x=>{
+        if(x.date>=start && x.date<end){
+          tot.avulsos+=+x.avulsos||0; tot.extras+=+x.extras||0; tot.cortes+=+x.cortes||0; tot.produtos+=+x.produtos||0; tot.assinaturas+=+x.assinaturas||0;
+          tot.atend+= +x.atendimentos||0;
+          const dsum=(+x.avulsos||0)+(+x.extras||0)+(+x.cortes||0)+(+x.produtos||0)+(+x.assinaturas||0);
+          days.set(x.date, (days.get(x.date)||0)+dsum);
+        }
+      });
+      tot.total=sum(tot);
+      return {tot, days};
+    }
+    function aggregateByMemberDetailed(range){
+      const start=ymd(range.start), end=ymd(range.end);
+      const map=new Map();
+      (lanc||[]).forEach(x=>{
+        if(x.date>=start && x.date<end){
+          const o=map.get(x.membroId)||{id:x.membroId, nome:nameOfMember(x.membroId), avulsos:0,extras:0,cortes:0,produtos:0,assinaturas:0};
+          o.avulsos+=+x.avulsos||0; o.extras+=+x.extras||0; o.cortes+=+x.cortes||0; o.produtos+=+x.produtos||0; o.assinaturas+=+x.assinaturas||0;
+          map.set(x.membroId,o);
+        }
+      });
+      const arr=Array.from(map.values()).map(o=> ({...o, total: o.avulsos+o.extras+o.cortes+o.produtos+o.assinaturas}));
+      arr.sort((a,b)=> b.total-a.total);
+      return arr;
+    }
+
+    /* ===== Charts ===== */
+    let chartMetaReal=null, chartPie=null, chartLinha=null, chartRanking=null;
+
+    /* ===== Render ===== */
+    function render(){
+      const uiPer = $('#fPeriodo').value;
+      const mm = $('#fMes').value; // YYYY-MM
+      let p = {...params};
+      if(mm){ const [y,m]=mm.split('-').map(Number); p.ano=y; p.mesRef=m; p.mes=m; }
+      p.periodo = uiPer;
+
+      const range = periodRange(p);
+      const work  = workingDays(range);
+      $('#kDiasUteis').textContent = work.length;
+
+      const {tot, days} = aggregatePeriod(range);
+      const total = tot.total;
+      const atend = tot.atend||0;
+      $('#kFaturamento').textContent = fmt(total);
+      $('#kTicket').textContent = fmt(atend? total/atend : 0);
+      $('#kAtend').textContent = atend;
+
+      // metas gerais
+      const g = metas.globais[uiPer] || {avulsos:0,extras:0,cortes:0,produtos:0,assinaturas:0,global:0};
+      const metaTotal = Number(g.global||0) || (Number(g.avulsos||0)+Number(g.extras||0)+Number(g.cortes||0)+Number(g.produtos||0)+Number(g.assinaturas||0));
+      $('#kMetaGlobal').textContent = fmt(metaTotal);
+      const pct = metaTotal? (total/metaTotal*100) : 0;
+      $('#kPctMeta').textContent = pct.toFixed(1)+'%';
+
+      // forecast
+      const hojeKey = ymd(new Date());
+      const passados = work.filter(d=> ymd(d) <= hojeKey).length;
+      const somaPassado = Array.from(days.entries()).filter(([d])=> d<=hojeKey).reduce((s,[,v])=>s+v,0);
+      const media = passados? (somaPassado/passados):0;
+      const restantes = Math.max(0, work.length-passados);
+      $('#kForecast').textContent = fmt(somaPassado + media*restantes);
+
+      // charts: Meta x Realizado (categorias)
+      const labelsCat = ['Avulsos','Extras','Cortes','Produtos','Assinaturas'];
+      const realVals  = [tot.avulsos, tot.extras, tot.cortes, tot.produtos, tot.assinaturas];
+      const metaVals  = [g.avulsos||0, g.extras||0, g.cortes||0, g.produtos||0, g.assinaturas||0];
+      const ctxMR = document.getElementById('chartMetaReal');
+      if(ctxMR){ chartMetaReal && chartMetaReal.destroy(); chartMetaReal = new Chart(ctxMR,{ type:'bar', data:{ labels:labelsCat, datasets:[{label:'Meta', data:metaVals},{label:'Realizado', data:realVals}] }, options:{ responsive:true } }); }
+
+      // pie de participação por categoria
+      const ctxPie = document.getElementById('chartPie');
+      if(ctxPie){ chartPie && chartPie.destroy(); chartPie = new Chart(ctxPie,{ type:'doughnut', data:{ labels:labelsCat, datasets:[{ data:realVals }] }, options:{ responsive:true, cutout:'55%' } }); }
+
+      // linha de evolução diária
+      const ordDays = Array.from(days.keys()).sort();
+      const vals = ordDays.map(k=> days.get(k));
+      const ctxL = document.getElementById('chartLinha');
+      if(ctxL){ chartLinha && chartLinha.destroy(); chartLinha = new Chart(ctxL,{ type:'line', data:{ labels:ordDays, datasets:[{label:'Faturamento diário', data:vals, tension:.3, fill:false}] }, options:{ responsive:true, scales:{ y:{ beginAtZero:true }}} }); }
+
+      // ranking
+      renderRanking(range);
+      // últimos lançamentos
+      renderUltimos(range);
+    }
+
+    function metaDoMembro(periodo, membroId){
+      const mp = (metas.membros && metas.membros[periodo]) ? metas.membros[periodo] : {};
+      const m = mp ? (mp[membroId] || {avulsos:0,extras:0,cortes:0,produtos:0,assinaturas:0}) : {avulsos:0,extras:0,cortes:0,produtos:0,assinaturas:0};
+      return {...m, total: (m.avulsos||0)+(m.extras||0)+(m.cortes||0)+(m.produtos||0)+(m.assinaturas||0)};
+    }
+
+    function renderRanking(range){
+      const perUI = $('#fPeriodo').value;
+      const metric = $('#rankMetric').value; // total | avulsos | ...
+      const arr = aggregateByMemberDetailed(range);
+      const labels = arr.map(a=> a.nome || '—');
+      const dados  = arr.map(a=> a[metric] || 0);
+
+      const ctxR = document.getElementById('chartRanking');
+      if(ctxR){ 
+        chartRanking && chartRanking.destroy(); 
+        chartRanking = new Chart(ctxR,{
+          type:'bar',
+          data:{ labels, datasets:[{label: metric==='total'?'Total':'Valor', data:dados}] },
+          options:{ responsive:true, indexAxis:'y', plugins:{ tooltip:{ callbacks:{ afterBody(items){ 
+            // detalhamento por categoria no tooltip
+            const i = items[0].dataIndex; const r = arr[i];
+            return `\nAvulsos: ${fmt(r.avulsos)}\nExtras: ${fmt(r.extras)}\nCortes: ${fmt(r.cortes)}\nProdutos: ${fmt(r.produtos)}\nAssinaturas: ${fmt(r.assinaturas)}`;
+          }}}}}
+        }); 
+      }
+
+      // Lista lateral resumida com medalhas e % da meta do membro
+      const box = $('#rankList'); box.innerHTML='';
+      if(!arr.length){ box.innerHTML = '<div class="text-secondary">Sem dados no período.</div>'; return; }
+      const medals=['🥇','🥈','🥉'];
+      arr.forEach((r,idx)=>{
+        const metaM = metaDoMembro(perUI, r.id);
+        const metaTot = metaM.total || 0;
+        const pct = metaTot ? (r.total / metaTot * 100) : 0;
+        const li=document.createElement('div');
+        li.className='col';
+        li.innerHTML = `
+          <div class="rank-item">
+            <div class="rank-left">
+              <div class="rank-medal">${medals[idx] || (idx+1)}</div>
+              <div>
+                <div class="rank-name">${r.nome || '—'}</div>
+                <div class="rank-meta">% meta: ${pct.toFixed(1)}% • Av:${fmt(r.avulsos)} • Ex:${fmt(r.extras)} • Co:${fmt(r.cortes)}</div>
+              </div>
+            </div>
+            <div class="rank-value">${fmt(r[metric] || r.total)}</div>
+          </div>`;
+        box.appendChild(li);
+      });
+    }
+
+    function renderUltimos(range){
+      const start=ymd(range.start), end=ymd(range.end);
+      const list = (lanc||[]).filter(x=> x.date>=start && x.date<end)
+        .map(x=> ({...x, total:(+x.avulsos||0)+(+x.extras||0)+(+x.cortes||0)+(+x.produtos||0)+(+x.assinaturas||0)}))
+        .sort((a,b)=> a.date<b.date?1:-1).slice(0,10);
+      const tb = $('#tbodyUltimos'); tb.innerHTML='';
+      if(!list.length){ tb.innerHTML = `<tr><td colspan="8" class="text-center text-secondary py-4">Sem lançamentos no período.</td></tr>`; return; }
+      list.forEach(x=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="badge rounded-pill badge-date">${x.date}</span></td>
+          <td>${nameOfMember(x.membroId)}</td>
+          <td>${fmt(x.avulsos||0)}</td>
+          <td>${fmt(x.extras||0)}</td>
+          <td>${fmt(x.cortes||0)}</td>
+          <td>${fmt(x.produtos||0)}</td>
+          <td>${fmt(x.assinaturas||0)}</td>
+          <td class="text-end fw-semibold">${fmt(x.total||0)}</td>`;
+        tb.appendChild(tr);
+      });
+    }
+
+    /* ===== Export CSV da série diária ===== */
+    function exportCSV(){
+      const uiPer = $('#fPeriodo').value;
+      const mm = $('#fMes').value;
+      let p = {...params};
+      if(mm){ const [y,m]=mm.split('-').map(Number); p.ano=y; p.mesRef=m; p.mes=m; }
+      p.periodo = uiPer;
+      const range = periodRange(p);
+      const {days} = aggregatePeriod(range);
+      const ordDays = Array.from(days.keys()).sort();
+      const rows = [['Data','Faturamento']];
+      ordDays.forEach(d=> rows.push([d, (days.get(d)||0).toFixed(2)]));
+      const csv = rows.map(r=> r.join(',')).join('\n');
+      const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='dashboard_serie_diaria.csv';
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    /* ===== Handlers / Boot ===== */
+    function attachHandlers(){
+      requestAnimationFrame(()=> $$('[data-anim]').forEach(el=> el.classList.add('in')));
+
+      // Sidebar collapse
+      const btnCollapse=$('#btnCollapseSidebar');
+      if(btnCollapse){
+        btnCollapse.addEventListener('click', ()=>{
+          const sb=$('#sidebar'), main=$('.main');
+          sb.classList.toggle('collapsed'); main.classList.toggle('collapsed');
+          try{ localStorage.setItem('amaralbarber:sidebar:collapsed', sb.classList.contains('collapsed')?'1':'0'); }catch(e){}
+        });
+      }
+      try{
+        const col = localStorage.getItem('amaralbarber:sidebar:collapsed')==='1';
+        if(col){ $('#sidebar').classList.add('collapsed'); $('.main').classList.add('collapsed'); }
+      }catch(e){}
+
+      // Filtros topo
+      const d=new Date();
+      $('#fMes').value = `${d.getFullYear()}-${String((params.mesRef||params.mes||d.getMonth()+1)).padStart(2,'0')}`;
+      $('#fPeriodo').value = params.periodo || 'Mensal';
+      $('#btnAplicar').addEventListener('click', render);
+
+      // Ranking
+      $('#rankMetric').addEventListener('change', render);
+
+      // CSV
+      $('#btnCSV').addEventListener('click', exportCSV);
+
+      // Modal CTA
+      document.addEventListener('click', (e)=>{
+        const t=e.target;
+        const ok = (t && (t.id==='btnQueroTestar' || (t.closest && t.closest('#btnQueroTestar'))));
+        if(ok){
+          const el=document.createElement('div');
+          el.className='position-fixed top-0 start-50 translate-middle-x mt-3 z-3';
+          el.innerHTML=`<div class="toast align-items-center text-bg-primary border-0 show" role="alert"><div class="d-flex"><div class="toast-body fw-semibold">Obrigado! Você será priorizado nas novidades.</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
+          document.body.appendChild(el); setTimeout(()=>el.remove(),2500);
+        }
+      });
+    }
+
+    // Init
+    loadAll();
+    attachHandlers();
+    render();
+
+    // Marcar nav ativo
+    (function setActiveNav(){
+      const path=(location.pathname.split('/').pop()||'dashboard.html').toLowerCase();
+      $$('.nav-link[href]').forEach(a=>{
+        const href=(a.getAttribute('href')||'').toLowerCase();
+        if(href===path){ a.classList.add('active'); }
+      });
+    })();
+  </script>
+</body>
+</html>

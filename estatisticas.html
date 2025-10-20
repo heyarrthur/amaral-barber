@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="pt-br" data-bs-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Estatísticas • Amaral Barber</title>
+
+  <!-- Bootstrap / Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{
+      --brand:#0d6efd; --brand-600:#0b5ed7; --ink:#0f172a; --subtle:#6b7280;
+      --bg:#f6f8fb; --card:#ffffff; --border:#e6eaf0;
+      --radius:16px; --radius-lg:20px;
+      --shadow-sm:0 6px 18px rgba(2,6,23,.06); --shadow-lg:0 20px 50px rgba(2,6,23,.08);
+    }
+    html, body{height:100%; background:var(--bg);}
+
+    /* Sidebar */
+    .sidebar{
+      position:fixed; inset:0 auto 0 0; width:300px;
+      background:linear-gradient(180deg,#ffffff 0%,#f9fbff 100%);
+      border-right:1px solid var(--border); z-index:1040; display:flex; flex-direction:column;
+      box-shadow:6px 0 28px rgba(2,6,23,.06);
+    }
+    .brand{ padding:24px 22px 10px; font-weight:800; color:var(--ink); font-size:1.35rem;}
+    .divider{ margin:10px 16px; border-top:1px dashed var(--border); }
+    .sub{ padding:12px 20px 6px; font-size:.78rem; color:#94a3b8; text-transform:uppercase; font-weight:700; letter-spacing:.08em;}
+    .nav-main{ padding:8px 10px 18px; overflow:auto;}
+    .nav-link{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:var(--radius); color:#0f172a; font-weight:600; transition: transform .2s ease, box-shadow .2s ease, background .2s ease;}
+    .nav-link .bi{ font-size:1.1rem; opacity:.95;}
+    .nav-link:hover{ background: rgba(13,110,253,.09); transform: translateX(3px); box-shadow: var(--shadow-sm);}
+    .nav-link.active{ background: var(--brand); color:#fff; box-shadow:0 10px 28px rgba(13,110,253,.28);}
+    .btn-as-link{ background:none; border:0; }
+
+    /* Collapse */
+    .sidebar.collapsed{ width:84px; }
+    .sidebar.collapsed .sub, .sidebar.collapsed .divider, .sidebar.collapsed .mt-auto{ display:none !important; }
+    .sidebar.collapsed .brand .title{ display:none; }
+    .sidebar .collapse-btn{ margin-left:auto; }
+    .sidebar.collapsed .nav-link{ justify-content:center; padding:12px; }
+    .sidebar.collapsed .nav-link .label{ display:none; }
+
+    .main{ margin-left:300px; min-height:100%;}
+    .main.collapsed{ margin-left:84px; }
+
+    /* Conteúdo */
+    .page{ padding:44px; }
+    .card-soft{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-lg);}
+    .card-soft .card-header{ background:transparent; border-bottom:1px solid var(--border); padding:16px 20px;}
+    .form-control, .form-select{ padding:.7rem .9rem; border-radius: 12px; border-color: var(--border);}
+    .form-control:focus, .form-select:focus{ box-shadow:0 0 0 .25rem rgba(13,110,253,.15); border-color: var(--brand-600);}
+    .btn{ border-radius:12px; }
+
+    [data-anim]{ opacity:0; transform: translateY(8px); transition: all .5s ease;}
+    [data-anim].in{ opacity:1; transform: translateY(0);}
+
+    .kpi{ border:1px solid var(--border); border-radius:16px; padding:16px; background:#fff; box-shadow:var(--shadow-sm);}
+    .kpi .label{ color:#64748b; font-size:.9rem;}
+    .kpi .value{ font-weight:800; font-size:1.4rem;}
+
+    @media (max-width: 991.98px){
+      .sidebar{ transform: translateX(-100%); transition: transform .3s ease;}
+      .sidebar.show{ transform: translateX(0);}
+      .main{ margin-left:0;}
+      .main.collapsed{ margin-left:0;}
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand d-flex align-items-center gap-2">
+      <i class="bi bi-scissors"></i> <span class="title">Amaral Barber</span>
+      <button class="btn btn-light btn-sm collapse-btn" id="btnCollapseSidebar" title="Recolher/expandir" aria-label="Recolher/expandir">
+        <i class="bi bi-layout-sidebar-inset"></i>
+      </button>
+    </div>
+    <hr class="divider">
+    <nav class="nav-main">
+      <button type="button" class="nav-link w-100 text-start btn-as-link" id="btnEarlyAccess" data-bs-toggle="modal" data-bs-target="#earlyModal" title="Acesso Antecipado">
+        <i class="bi bi-lightning-charge"></i> <span class="label">Acesso Antecipado</span>
+      </button>
+      <hr class="divider">
+      <div class="sub">Geral</div>
+      <a class="nav-link" href="dashboard.html" title="Dashboard"><i class="bi bi-speedometer2"></i> <span class="label">Dashboard</span></a>
+      <a class="nav-link" href="parametros.html" title="Parâmetros"><i class="bi bi-sliders"></i> <span class="label">Parâmetros</span></a>
+      <hr class="divider">
+      <div class="sub">Faturamento</div>
+      <a class="nav-link" href="financeiro.html" title="Financeiro"><i class="bi bi-wallet2"></i> <span class="label">Financeiro</span></a>
+      <a class="nav-link" href="lancamentos.html" title="Lançamentos Diários"><i class="bi bi-journal-text"></i> <span class="label">Lançamentos Diários</span></a>
+      <hr class="divider">
+      <div class="sub">Equipe</div>
+      <a class="nav-link" href="gerenciar.html" title="Gerenciar Equipe"><i class="bi bi-people"></i> <span class="label">Gerenciar</span></a>
+      <a class="nav-link active" href="estatisticas.html" title="Estatísticas"><i class="bi bi-graph-up"></i> <span class="label">Estatísticas</span></a>
+    </nav>
+    <div class="mt-auto p-3 small text-secondary">
+      <div class="d-flex align-items-center gap-2"><i class="bi bi-cloud-check"></i><span>Dados salvos no navegador (LocalStorage)</span></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <section class="page container-xxl">
+      <div class="row g-4" data-anim>
+        <div class="col-12">
+          <div class="card card-soft">
+            <div class="card-header d-flex align-items-center justify-content-between">
+              <h5 class="mb-0"><i class="bi bi-graph-up"></i> Estatísticas por Membro</h5>
+              <div class="d-flex gap-2 align-items-center">
+                <select id="selMembro" class="form-select" style="min-width:240px"></select>
+                <button class="btn btn-primary" id="btnVer"><i class="bi bi-check2-circle"></i> Ver métricas</button>
+              </div>
+            </div>
+            <div class="card-body" id="areaSelecao">
+              <div class="text-center py-5 text-secondary">
+                <div class="mb-2"><i class="bi bi-person-lines-fill" style="font-size:2rem"></i></div>
+                <div>Selecione um membro para visualizar o dashboard de métricas.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12" id="areaDashboard" hidden>
+          <!-- Header do membro -->
+          <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center gap-3">
+              <div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width:44px;height:44px;background:#e2e8f0;font-weight:800" id="avt"></div>
+              <div>
+                <div class="fw-bold" id="nomeM"></div>
+                <div class="text-secondary small" id="cargoM"></div>
+              </div>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+              <span class="text-secondary">Período</span>
+              <select class="form-select" id="selPeriodo" style="width:auto">
+                <option>Diário</option>
+                <option>Semanal</option>
+                <option>Quinzenal</option>
+                <option>Mensal</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- KPIs -->
+          <div class="row g-3 mb-2">
+            <div class="col-6 col-md-3"><div class="kpi"><div class="label">Faturamento total</div><div class="value" id="kpiTotal">R$ 0,00</div></div></div>
+            <div class="col-6 col-md-3"><div class="kpi"><div class="label">Ticket médio</div><div class="value" id="kpiTicket">R$ 0,00</div></div></div>
+            <div class="col-6 col-md-3"><div class="kpi"><div class="label">Dias úteis</div><div class="value" id="kpiUteis">0</div></div></div>
+            <div class="col-6 col-md-3"><div class="kpi"><div class="label">Forecast</div><div class="value" id="kpiForecast">R$ 0,00</div></div></div>
+          </div>
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3"><div class="kpi"><div class="label">Meta (soma categorias)</div><div class="value" id="kpiMeta">R$ 0,00</div></div></div>
+            <div class="col-6 col-md-3"><div class="kpi"><div class="label">% da Meta (geral)</div><div class="value" id="kpiPctMeta">0%</div></div></div>
+            <div class="col-6 col-md-3"><div class="kpi"><div class="label">Melhor dia</div><div class="value" id="kpiBest">R$ 0,00</div></div></div>
+            <div class="col-6 col-md-3"><div class="kpi"><div class="label">Pior dia</div><div class="value" id="kpiWorst">R$ 0,00</div></div></div>
+          </div>
+
+          <!-- Gráficos -->
+          <div class="row g-4">
+            <div class="col-12 col-xxl-4">
+              <div class="card card-soft h-100">
+                <div class="card-header"><strong>Faturamento por Categoria</strong></div>
+                <div class="card-body"><canvas id="chartCats" height="220"></canvas></div>
+              </div>
+            </div>
+            <div class="col-12 col-xxl-4">
+              <div class="card card-soft h-100">
+                <div class="card-header"><strong>Mix por Categoria</strong></div>
+                <div class="card-body"><canvas id="chartMix" height="220"></canvas></div>
+              </div>
+            </div>
+            <div class="col-12 col-xxl-4">
+              <div class="card card-soft h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <strong>Evolução Diária</strong>
+                  <small class="text-secondary" id="lblRange"></small>
+                </div>
+                <div class="card-body"><canvas id="chartDia" height="220"></canvas></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-4 mt-1">
+            <div class="col-12 col-xl-6">
+              <div class="card card-soft h-100">
+                <div class="card-header"><strong>Comparativo com Período Anterior</strong></div>
+                <div class="card-body"><canvas id="chartPrev" height="220"></canvas></div>
+              </div>
+            </div>
+            <div class="col-12 col-xl-6">
+              <div class="card card-soft h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <strong>Detalhe diário</strong>
+                  <button class="btn btn-sm btn-outline-primary" id="btnExport"><i class="bi bi-download"></i> Exportar CSV</button>
+                </div>
+                <div class="card-body table-responsive">
+                  <table class="table align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th class="text-end">Avulsos</th>
+                        <th class="text-end">Extras</th>
+                        <th class="text-end">Cortes</th>
+                        <th class="text-end">Produtos</th>
+                        <th class="text-end">Assinaturas</th>
+                        <th class="text-end">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tbodyDias"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabela resumo -->
+          <div class="card card-soft mt-4">
+            <div class="card-header"><strong>Resumo por Categoria vs Meta</strong></div>
+            <div class="card-body table-responsive">
+              <table class="table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Categoria</th>
+                    <th class="text-end">Faturamento</th>
+                    <th class="text-end">Meta</th>
+                    <th class="text-end">% da Meta</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyResumo"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Early Access Modal -->
+  <div class="modal fade" id="earlyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: var(--radius-lg);">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-lightning-charge"></i> Acesso Antecipado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3 text-secondary">Recursos em beta; obrigado por participar do acesso antecipado.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnQueroTestar"><i class="bi bi-stars"></i> Quero participar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    /* ===== Shortcuts / Consts ===== */
+    const $$ = (s,ctx=document)=>Array.from(ctx.querySelectorAll(s));
+    const $  = (s,ctx=document)=>ctx.querySelector(s);
+
+    const TEAM_KEY   = 'amaralbarber:team:v1';
+    const PARAMS_KEY = 'amaralbarber:parametros:v1';
+    const LANC_KEY   = 'amaralbarber:lancamentos:v1';
+
+    let equipe = [];
+    let params = null;
+    let lanc   = [];
+
+    /* ===== Load data ===== */
+    function loadAll(){
+      try{ equipe = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]'); }catch(e){ equipe=[]; }
+      try{ params = JSON.parse(localStorage.getItem(PARAMS_KEY) || 'null'); }catch(e){ params=null; }
+      try{ lanc   = JSON.parse(localStorage.getItem(LANC_KEY)   || '[]'); }catch(e){ lanc=[]; }
+      if(!params){
+        const d=new Date();
+        params = {periodo:'Mensal', ano:d.getFullYear(), mes:d.getMonth()+1, mesRef:d.getMonth()+1, semana:'1', quinzena:'1', abrirDomingo:false, extras:[]};
+      }
+    }
+
+    /* ===== Date helpers ===== */
+    function ymd(d){ return d.toISOString().slice(0,10); }
+    function isSunday(d){ return d.getDay()===0; }
+    function isClosedDate(d){
+      if(!params) return false;
+      const s = ymd(d);
+      return (params.extras||[]).includes(s);
+    }
+
+    function periodRange(p){
+      const {periodo, ano, mes, mesRef, semana, quinzena} = p;
+      let start, end;
+      const refMonth = (mesRef || mes);
+      const firstDay = new Date(ano, refMonth-1, 1);
+      const lastDay  = new Date(ano, refMonth, 0);
+      if(periodo==='Diário'){
+        // usa hoje dentro do mês selecionado
+        const today = new Date();
+        const d = new Date(ano, (mes||mesRef)-1, today.getDate());
+        start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        end   = new Date(start); end.setDate(end.getDate()+1);
+      }else if(periodo==='Semanal'){
+        const w = Number(semana||1); // semanas 1..4
+        start = new Date(firstDay); start.setDate(1 + (w-1)*7);
+        end   = new Date(start); end.setDate(start.getDate()+7);
+        if(end>new Date(ano, refMonth-1, lastDay.getDate()+1)) end = new Date(ano, refMonth-1, lastDay.getDate()+1);
+      }else if(periodo==='Quinzenal'){
+        const q = Number(quinzena||1);
+        start = new Date(firstDay); start.setDate(q===1?1:16);
+        end   = new Date(firstDay); end.setDate(q===1?16:lastDay.getDate()+1);
+      }else{ // Mensal
+        start = firstDay; end = new Date(ano, refMonth-1, lastDay.getDate()+1);
+      }
+      return {start, end};
+    }
+
+    function previousRange(p){
+      const {periodo, ano, mes, mesRef, semana, quinzena} = p;
+      let start,end;
+      if(periodo==='Diário'){
+        const today = new Date(ano, (mes||mesRef)-1, new Date().getDate());
+        end = new Date(today); start = new Date(today); start.setDate(start.getDate()-1);
+      }else if(periodo==='Semanal'){
+        const ref = new Date(ano, (mesRef||mes)-1, 1 + (Number(semana||1)-1)*7);
+        end = new Date(ref); start = new Date(ref); start.setDate(start.getDate()-7);
+      }else if(periodo==='Quinzenal'){
+        const ref = new Date(ano, (mesRef||mes)-1, Number(quinzena||1)===1?1:16);
+        end = new Date(ref); start = new Date(ref); start.setDate(start.getDate()-15);
+      }else{ // Mensal
+        start = new Date(ano, (mesRef||mes)-2, 1);
+        end   = new Date(ano, (mesRef||mes)-1, 1);
+      }
+      return {start, end};
+    }
+
+    function workingDays(range){
+      const days=[]; const d=new Date(range.start);
+      const openSunday = !!params.abrirDomingo;
+      while(d<range.end){
+        const closed = isClosedDate(d);
+        if(!closed){ if(openSunday || !isSunday(d)) days.push(new Date(d)); }
+        d.setDate(d.getDate()+1);
+      }
+      return days;
+    }
+
+    /* ===== Aggregation ===== */
+    function fmtMoney(n){ return (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+
+    function aggregate(memberId, range){
+      const map = new Map();
+      const startKey = ymd(range.start), endKey = ymd(range.end);
+
+      (lanc||[]).filter(x=> x.membroId===memberId && x.date>=startKey && x.date<endKey)
+        .forEach(x=>{
+          const k = x.date;
+          if(!map.has(k)) map.set(k, {avulsos:0, extras:0, cortes:0, produtos:0, assinaturas:0, atendimentos:0});
+          const o = map.get(k);
+          o.avulsos += Number(x.avulsos||0);
+          o.extras  += Number(x.extras||0);
+          o.cortes  += Number(x.cortes||0);
+          o.produtos+= Number(x.produtos||0);
+          o.assinaturas += Number(x.assinaturas||0);
+          o.atendimentos += Number(x.atendimentos||0);
+        });
+
+      // sequência diária contínua
+      const days = [];
+      const d = new Date(range.start);
+      while(d<range.end){
+        const key = ymd(d);
+        const o = map.get(key) || {avulsos:0, extras:0, cortes:0, produtos:0, assinaturas:0, atendimentos:0};
+        days.push({date:key, ...o});
+        d.setDate(d.getDate()+1);
+      }
+
+      const tot = days.reduce((a,b)=>({
+        avulsos:a.avulsos+b.avulsos,
+        extras:a.extras+b.extras,
+        cortes:a.cortes+b.cortes,
+        produtos:a.produtos+b.produtos,
+        assinaturas:a.assinaturas+b.assinaturas,
+        atendimentos:a.atendimentos+b.atendimentos
+      }),{avulsos:0,extras:0,cortes:0,produtos:0,assinaturas:0,atendimentos:0});
+      tot.total = tot.avulsos+tot.extras+tot.cortes+tot.produtos+tot.assinaturas;
+
+      return {days, tot};
+    }
+
+    /* ===== Charts ===== */
+    let catsChart=null, mixChart=null, dayChart=null, prevChart=null;
+
+    function drawCharts(agg, range, prev){
+      const cats = ['Avulsos','Extras','Cortes','Produtos','Assinaturas'];
+      const vals = [agg.tot.avulsos, agg.tot.extras, agg.tot.cortes, agg.tot.produtos, agg.tot.assinaturas];
+
+      const ctx1 = document.getElementById('chartCats');
+      if(ctx1){ catsChart && catsChart.destroy(); catsChart = new Chart(ctx1, { type:'bar', data:{ labels:cats, datasets:[{ label:'R$', data:vals }] }, options:{ responsive:true, plugins:{legend:{display:false}} }}); }
+
+      const ctxMix = document.getElementById('chartMix');
+      if(ctxMix){ mixChart && mixChart.destroy(); mixChart = new Chart(ctxMix, { type:'pie', data:{ labels:cats, datasets:[{ data:vals }] }, options:{ responsive:true }}); }
+
+      const labels = agg.days.map(d=> d.date.slice(-2));
+      const valsDay = agg.days.map(d=> d.avulsos+d.extras+d.cortes+d.produtos+d.assinaturas);
+      const ctx2 = document.getElementById('chartDia');
+      if(ctx2){ dayChart && dayChart.destroy(); dayChart = new Chart(ctx2, { type:'line', data:{ labels, datasets:[{ label:'Total do dia', data:valsDay, tension:.3, fill:false }]}, options:{ responsive:true, plugins:{legend:{display:false}} }}); }
+
+      const ctxPrev = document.getElementById('chartPrev');
+      if(ctxPrev){
+        prevChart && prevChart.destroy();
+        const prevTotal = prev ? (prev.tot.avulsos+prev.tot.extras+prev.tot.cortes+prev.tot.produtos+prev.tot.assinaturas) : 0;
+        prevChart = new Chart(ctxPrev, { type:'bar', data:{ labels:['Anterior','Atual'], datasets:[{ data:[prevTotal, agg.tot.total], label:'Total R$' }] }, options:{ responsive:true, plugins:{legend:{display:false}} }});
+      }
+
+      const endMinus1 = new Date(range.end); endMinus1.setDate(endMinus1.getDate()-1);
+      const lbl = document.getElementById('lblRange'); if(lbl) lbl.textContent = `${ymd(range.start)} – ${ymd(endMinus1)}`;
+    }
+
+    /* ===== KPIs / Resumos ===== */
+    function fillKPIs(agg, workDays, membro){
+      document.getElementById('kpiTotal').textContent = fmtMoney(agg.tot.total);
+      const atend = agg.tot.atendimentos||0;
+      document.getElementById('kpiTicket').textContent = atend? fmtMoney(agg.tot.total/atend): 'R$ 0,00';
+      document.getElementById('kpiUteis').textContent  = workDays.length;
+
+      // Forecast
+      const hojeKey = ymd(new Date());
+      const passados = agg.days.filter(d=> d.date <= hojeKey);
+      const somaPassado = passados.reduce((s,x)=> s + x.avulsos+x.extras+x.cortes+x.produtos+x.assinaturas, 0);
+      const media = passados.length? (somaPassado/passados.length): 0;
+      const restantes = Math.max(0, workDays.length - passados.length);
+      document.getElementById('kpiForecast').textContent = fmtMoney(somaPassado + media*restantes);
+
+      // Metas
+      const metaTotal = Number(membro.metaAvulsos||0)+Number(membro.metaExtras||0)+Number(membro.metaCortes||0)+Number(membro.metaProdutos||0)+Number(membro.metaAssinaturas||0);
+      document.getElementById('kpiMeta').textContent = fmtMoney(metaTotal);
+      const pct = metaTotal? (agg.tot.total/metaTotal*100): 0;
+      document.getElementById('kpiPctMeta').textContent = `${pct.toFixed(1)}%`;
+
+      // Best/Worst day
+      if(agg.days.length){
+        const totals = agg.days.map(d=> ({date:d.date, v:d.avulsos+d.extras+d.cortes+d.produtos+d.assinaturas}));
+        const best = totals.reduce((a,b)=> b.v>a.v? b: a, {v:-Infinity, date:'—'});
+        const worst = totals.reduce((a,b)=> b.v<a.v? b: a, {v: Infinity, date:'—'});
+        document.getElementById('kpiBest').textContent  = `${fmtMoney(best.v)} (${best.date})`;
+        document.getElementById('kpiWorst').textContent = `${fmtMoney(worst.v)} (${worst.date})`;
+      }else{
+        document.getElementById('kpiBest').textContent  = 'R$ 0,00';
+        document.getElementById('kpiWorst').textContent = 'R$ 0,00';
+      }
+    }
+
+    function fillResumo(agg, membro){
+      const metas = {
+        'Serviços avulsos': Number(membro.metaAvulsos||0),
+        'Serviços extras': Number(membro.metaExtras||0),
+        'Cortes': Number(membro.metaCortes||0),
+        'Produtos': Number(membro.metaProdutos||0),
+        'Assinaturas': Number(membro.metaAssinaturas||0)
+      };
+      const fatur = {
+        'Serviços avulsos': agg.tot.avulsos,
+        'Serviços extras': agg.tot.extras,
+        'Cortes': agg.tot.cortes,
+        'Produtos': agg.tot.produtos,
+        'Assinaturas': agg.tot.assinaturas
+      };
+      const tb = document.getElementById('tbodyResumo'); tb.innerHTML='';
+      Object.keys(metas).forEach(cat=>{
+        const f = fatur[cat]||0; const m = metas[cat]||0; const pct = m? (f/m*100): 0;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${cat}</td><td class="text-end">${fmtMoney(f)}</td><td class="text-end">${fmtMoney(m)}</td><td class="text-end">${pct.toFixed(1)}%</td>`;
+        tb.appendChild(tr);
+      });
+
+      // Detalhe diário
+      const tbD = document.getElementById('tbodyDias'); tbD.innerHTML='';
+      agg.days.forEach(d=>{
+        const total = d.avulsos+d.extras+d.cortes+d.produtos+d.assinaturas;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${d.date}</td><td class="text-end">${fmtMoney(d.avulsos)}</td><td class="text-end">${fmtMoney(d.extras)}</td><td class="text-end">${fmtMoney(d.cortes)}</td><td class="text-end">${fmtMoney(d.produtos)}</td><td class="text-end">${fmtMoney(d.assinaturas)}</td><td class="text-end">${fmtMoney(total)}</td>`;
+        tbD.appendChild(tr);
+      });
+    }
+
+    /* ===== UI Flow ===== */
+    function populateMembers(){
+      const sel = document.getElementById('selMembro');
+      if(!sel) return;
+      if(!equipe.length){ sel.innerHTML = '<option value="">Nenhum membro cadastrado</option>'; return; }
+      sel.innerHTML = '<option value="">Selecione...</option>' + equipe.map(m=>`<option value="${m.id}">${m.nome} — ${m.cargo}</option>`).join('');
+    }
+
+    function updateHeader(m){
+      document.getElementById('avt').textContent = (m.nome||'?').trim().split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
+      document.getElementById('nomeM').textContent = m.nome;
+      document.getElementById('cargoM').textContent = m.cargo;
+    }
+
+    function applyCollapse(){
+      try{
+        const col = localStorage.getItem('amaralbarber:sidebar:collapsed')==='1';
+        if(col){ document.getElementById('sidebar').classList.add('collapsed'); document.querySelector('.main').classList.add('collapsed'); }
+      }catch(e){}
+    }
+
+    function setActiveNav(){
+      const path=(location.pathname.split('/').pop()||'estatisticas.html').toLowerCase();
+      $$('.nav-link[href]').forEach(a=>{
+        const href=(a.getAttribute('href')||'').toLowerCase();
+        if(href===path){ a.classList.add('active'); }
+      });
+    }
+
+    function onSelect(){
+      const id = document.getElementById('selMembro').value; if(!id) return;
+      const m = (equipe||[]).find(x=> x.id===id); if(!m) return;
+
+      updateHeader(m);
+
+      const periodSel = document.getElementById('selPeriodo');
+      if(periodSel) periodSel.value = (params.periodo||'Mensal');
+
+      const range = periodRange(params);
+      const prev  = previousRange(params);
+      const work  = workingDays(range);
+      const agg   = aggregate(m.id, range);
+      const aggPrev = aggregate(m.id, prev);
+
+      fillKPIs(agg, work, m);
+      drawCharts(agg, range, aggPrev);
+      fillResumo(agg, m);
+
+      document.getElementById('areaSelecao').hidden = true;
+      document.getElementById('areaDashboard').hidden = false;
+    }
+
+    function exportCSV(){
+      if(document.getElementById('areaDashboard').hidden) return;
+      const id = document.getElementById('selMembro').value;
+      const m = (equipe||[]).find(x=> x.id===id); if(!m) return;
+      const range = periodRange(params);
+      const agg = aggregate(m.id, range);
+
+      const rows = [['Data','Avulsos','Extras','Cortes','Produtos','Assinaturas','Atendimentos','Total']];
+      agg.days.forEach(d=> rows.push([d.date,d.avulsos,d.extras,d.cortes,d.produtos,d.assinaturas,d.atendimentos,(d.avulsos+d.extras+d.cortes+d.produtos+d.assinaturas)]));
+
+      const csv = rows.map(r=> r.map(v=> (typeof v==='string' && v.includes(',')) ? ('"'+v+'"') : v).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url  = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `estatisticas_${m.nome.replace(/\s+/g,'_')}.csv`;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    /* ===== Handlers / Boot ===== */
+    function attachHandlers(){
+      requestAnimationFrame(()=> $$('[data-anim]').forEach(el=> el.classList.add('in')));
+
+      const btnCollapse = document.getElementById('btnCollapseSidebar');
+      if(btnCollapse){
+        btnCollapse.addEventListener('click', ()=>{
+          const sb=document.getElementById('sidebar'), main=document.querySelector('.main');
+          sb.classList.toggle('collapsed'); main.classList.toggle('collapsed');
+          try{ localStorage.setItem('amaralbarber:sidebar:collapsed', sb.classList.contains('collapsed')?'1':'0'); }catch(e){}
+        });
+      }
+
+      const btnVer = document.getElementById('btnVer');
+      if(btnVer) btnVer.addEventListener('click', onSelect);
+
+      const selPeriodo = document.getElementById('selPeriodo');
+      if(selPeriodo) selPeriodo.addEventListener('change', ()=>{
+        if(document.getElementById('areaDashboard').hidden) return;
+        params.periodo = selPeriodo.value;
+        onSelect();
+      });
+
+      const btnExport = document.getElementById('btnExport');
+      if(btnExport) btnExport.addEventListener('click', exportCSV);
+
+      // CTA visual do modal
+      document.addEventListener('click', (e)=>{
+        const t = e.target;
+        if(t && (t.id === 'btnQueroTestar' || t.closest?.('#btnQueroTestar'))){
+          const el=document.createElement('div');
+          el.className='position-fixed top-0 start-50 translate-middle-x mt-3 z-3';
+          el.innerHTML=`<div class="toast align-items-center text-bg-primary border-0 show" role="alert"><div class="d-flex"><div class="toast-body fw-semibold">Obrigado! Você será priorizado nas novidades.</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
+          document.body.appendChild(el); setTimeout(()=>el.remove(), 2500);
+        }
+      });
+    }
+
+    // Boot
+    loadAll();
+    populateMembers();
+    applyCollapse();
+    setActiveNav();
+    attachHandlers();
+  </script>
+</body>
+</html>

@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="pt-br" data-bs-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Financeiro • Amaral Barber</title>
+
+  <!-- Bootstrap / Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{
+      --brand:#0d6efd; --brand-600:#0b5ed7; --ink:#0f172a; --subtle:#6b7280;
+      --bg:#f6f8fb; --card:#ffffff; --border:#e6eaf0;
+      --radius:16px; --radius-lg:20px;
+      --shadow-sm:0 6px 18px rgba(2,6,23,.06); --shadow-lg:0 20px 50px rgba(2,6,23,.08);
+      /* spacing scale */
+      --s-1: .25rem; --s-2: .5rem; --s-3: .75rem; --s-4: 1rem; --s-5: 1.25rem; --s-6: 1.5rem;
+      --s-7: 2rem; --s-8: 2.5rem; --s-9: 3rem;
+      --ctrl-h: 48px;
+    }
+    html, body{height:100%; background:var(--bg);}
+
+    /* Sidebar */
+    .sidebar{
+      position:fixed; inset:0 auto 0 0; width:300px;
+      background:linear-gradient(180deg,#ffffff 0%,#f9fbff 100%);
+      border-right:1px solid var(--border); z-index:1040; display:flex; flex-direction:column;
+      box-shadow:6px 0 28px rgba(2,6,23,.06);
+    }
+    .brand{ padding:24px 22px 8px; font-weight:800; color:var(--ink); font-size:1.35rem;}
+    .divider{ margin:10px 16px; border-top:1px dashed var(--border); }
+    .sub{ padding:12px 20px 6px; font-size:.78rem; color:#94a3b8; text-transform:uppercase; font-weight:700; letter-spacing:.08em;}
+    .nav-main{ padding:8px 12px 18px; overflow:auto;}
+    .nav-link{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:var(--radius); color:#0f172a; font-weight:600; transition: transform .2s ease, box-shadow .2s ease, background .2s ease;}
+    .nav-link .bi{ font-size:1.1rem; opacity:.95;}
+    .nav-link:hover{ background: rgba(13,110,253,.09); transform: translateX(3px); box-shadow: var(--shadow-sm);}
+    .nav-link.active{ background: var(--brand); color:#fff; box-shadow:0 10px 28px rgba(13,110,253,.28);}
+    .btn-as-link{ background:none; border:0; }
+
+    /* Collapse */
+    .sidebar.collapsed{ width:84px; }
+    .sidebar.collapsed .sub, .sidebar.collapsed .divider, .sidebar.collapsed .mt-auto{ display:none !important; }
+    .sidebar.collapsed .brand .title{ display:none; }
+    .sidebar .collapse-btn{ margin-left:auto; }
+    .sidebar.collapsed .nav-link{ justify-content:center; padding:12px; }
+    .sidebar.collapsed .nav-link .label{ display:none; }
+
+    .main{ margin-left:300px; min-height:100%;}
+    .main.collapsed{ margin-left:84px; }
+
+    /* Conteúdo */
+    .page{ padding: clamp(var(--s-6), 4vw, var(--s-9)); }
+    .row.g-tighter { --bs-gutter-x: var(--s-5); --bs-gutter-y: var(--s-5); }
+    .row.g-relaxed{ --bs-gutter-x: var(--s-7); --bs-gutter-y: var(--s-7); }
+
+    .card-soft{
+      background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-lg);
+    }
+    .card-soft .card-header{
+      background:transparent; border-bottom:1px solid var(--border);
+      padding: clamp(var(--s-5), 2vw, var(--s-7)) clamp(var(--s-5), 2.2vw, var(--s-8));
+    }
+    .card-soft .card-body{
+      padding: clamp(var(--s-6), 3vw, var(--s-8));
+    }
+
+    .form-control, .form-select{
+      padding: .65rem .95rem; border-radius: 12px; border-color: var(--border); height: var(--ctrl-h);
+    }
+    .form-control:focus, .form-select:focus{
+      box-shadow:0 0 0 .25rem rgba(13,110,253,.15); border-color: var(--brand-600);
+    }
+    .btn{ border-radius:12px; padding: .6rem 1rem; }
+
+    [data-anim]{ opacity:0; transform: translateY(8px); transition: all .5s ease;}
+    [data-anim].in{ opacity:1; transform: translateY(0);}
+
+    .kpi{ border:1px solid var(--border); border-radius:16px; padding: var(--s-5) var(--s-6); background:#fff; box-shadow:var(--shadow-sm);}
+    .kpi .label{ color:#64748b; font-size:.9rem; margin-bottom:.15rem;}
+    .kpi .value{ font-weight:800; font-size:1.45rem;}
+
+    .toolbar{ display:flex; flex-wrap:wrap; gap: var(--s-4); align-items:center; }
+    .toolbar > *{ margin: 0 !important; }
+
+    .badge-date{ background:#eef2ff; color:#3730a3; border:1px solid rgba(99,102,241,.25); padding:.5rem .7rem; }
+    .table th, .table td{ padding: 1rem 1rem; vertical-align: middle; }
+    .table tfoot th, .table tfoot td{ font-weight:700; border-top-width:2px; }
+
+    /* Ajustes responsivos */
+    @media (max-width: 1199.98px){
+      .toolbar{ gap: var(--s-3); }
+      .form-control, .form-select{ height: 44px; }
+    }
+    @media (max-width: 991.98px){
+      .sidebar{ transform: translateX(-100%); transition: transform .3s ease;}
+      .sidebar.show{ transform: translateX(0);}
+      .main{ margin-left:0;}
+      .main.collapsed{ margin-left:0;}
+      .page{ padding: var(--s-6); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand d-flex align-items-center gap-2">
+      <i class="bi bi-scissors"></i> <span class="title">Amaral Barber</span>
+      <button class="btn btn-light btn-sm collapse-btn" id="btnCollapseSidebar" title="Recolher/expandir" aria-label="Recolher/expandir">
+        <i class="bi bi-layout-sidebar-inset"></i>
+      </button>
+    </div>
+    <hr class="divider">
+    <nav class="nav-main">
+      <button type="button" class="nav-link w-100 text-start btn-as-link" id="btnEarlyAccess" data-bs-toggle="modal" data-bs-target="#earlyModal" title="Acesso Antecipado">
+        <i class="bi bi-lightning-charge"></i> <span class="label">Acesso Antecipado</span>
+      </button>
+      <hr class="divider">
+      <div class="sub">Geral</div>
+      <a class="nav-link" href="dashboard.html" title="Dashboard"><i class="bi bi-speedometer2"></i> <span class="label">Dashboard</span></a>
+      <a class="nav-link" href="parametros.html" title="Parâmetros"><i class="bi bi-sliders"></i> <span class="label">Parâmetros</span></a>
+      <hr class="divider">
+      <div class="sub">Faturamento</div>
+      <a class="nav-link active" href="financeiro.html" title="Financeiro"><i class="bi bi-wallet2"></i> <span class="label">Financeiro</span></a>
+      <a class="nav-link" href="lancamentos.html" title="Lançamentos Diários"><i class="bi bi-journal-text"></i> <span class="label">Lançamentos Diários</span></a>
+      <hr class="divider">
+      <div class="sub">Equipe</div>
+      <a class="nav-link" href="gerenciar.html" title="Gerenciar Equipe"><i class="bi bi-people"></i> <span class="label">Gerenciar</span></a>
+      <a class="nav-link" href="estatisticas.html" title="Estatísticas"><i class="bi bi-graph-up"></i> <span class="label">Estatísticas</span></a>
+    </nav>
+    <div class="mt-auto p-3 small text-secondary">
+      <div class="d-flex align-items-center gap-2"><i class="bi bi-cloud-check"></i><span>Dados salvos no navegador (LocalStorage)</span></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <section class="page container-xxl">
+      <div class="row g-relaxed" data-anim>
+
+        <!-- KPIs -->
+        <div class="col-12">
+          <div class="row g-4 g-xl-5">
+            <div class="col-6 col-md-3"><div class="kpi"><div class="label">Entradas</div><div class="value" id="kEntradas">R$ 0,00</div></div></div>
+            <div class="col-6 col-md-3"><div class="kpi"><div class="label">Saídas</div><div class="value" id="kSaidas">R$ 0,00</div></div></div>
+            <div class="col-6 col-md-3"><div class="kpi"><div class="label">Saldo (período)</div><div class="value" id="kSaldo">R$ 0,00</div></div></div>
+            <div class="col-6 col-md-3"><div class="kpi"><div class="label">Saldo Acumulado</div><div class="value" id="kAcumulado">R$ 0,00</div></div></div>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <div class="col-12">
+          <div class="card card-soft">
+            <div class="card-header d-flex align-items-center justify-content-between">
+              <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Nova Movimentação</h5>
+              <div class="toolbar">
+                <button class="btn btn-outline-secondary" id="btnLimpar"><i class="bi bi-eraser"></i> Limpar</button>
+                <button class="btn btn-primary" id="btnSalvar"><i class="bi bi-save"></i> Salvar</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <form id="formFin" class="row g-4 g-xl-5">
+                <input type="hidden" id="finId">
+                <div class="col-md-2">
+                  <label class="form-label">Data</label>
+                  <input type="date" class="form-control" id="date" required>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Tipo</label>
+                  <select id="tipo" class="form-select" required>
+                    <option value="receita">Entrada (Receita)</option>
+                    <option value="despesa">Saída (Despesa)</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Categoria</label>
+                  <input class="form-control" id="categoria" list="catList" placeholder="Ex.: Avulsos, Aluguel..." required>
+                  <datalist id="catList"></datalist>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Valor (R$)</label>
+                  <input type="number" min="0" step="0.01" class="form-control" id="valor" placeholder="0,00" required>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Forma</label>
+                  <select id="forma" class="form-select">
+                    <option>Dinheiro</option>
+                    <option>Cartão</option>
+                    <option>Pix</option>
+                    <option>Outros</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Profissional (opcional)</label>
+                  <select id="membroId" class="form-select"></select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Descrição (opcional)</label>
+                  <input class="form-control" id="descr" placeholder="Observações…">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                  <div class="form-check ms-1">
+                    <input class="form-check-input" type="checkbox" id="conciliado">
+                    <label class="form-check-label" for="conciliado">Conciliado</label>
+                  </div>
+                </div>
+              </form>
+              <div class="alert alert-info mt-4">
+                <i class="bi bi-info-circle"></i> Este módulo <strong>não redireciona</strong> para outras páginas. Tudo é salvo localmente em <strong>Financeiro</strong>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtros + Gráficos -->
+        <div class="col-12">
+          <div class="card card-soft">
+            <div class="card-header d-flex align-items-center justify-content-between">
+              <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros & Visão</h5>
+              <div class="toolbar">
+                <span class="text-secondary me-1">Período</span>
+                <select id="fPeriodo" class="form-select" style="width:auto">
+                  <option>Diário</option>
+                  <option>Semanal</option>
+                  <option>Quinzenal</option>
+                  <option selected>Mensal</option>
+                </select>
+                <input type="date" class="form-control" id="fIni">
+                <span class="mx-1">—</span>
+                <input type="date" class="form-control" id="fFim">
+                <select id="fTipo" class="form-select" style="width:auto">
+                  <option value="">Todos</option>
+                  <option value="receita">Entradas</option>
+                  <option value="despesa">Saídas</option>
+                </select>
+                <select id="fMembro" class="form-select" style="min-width:220px">
+                  <option value="">Todos os membros</option>
+                </select>
+                <select id="fConc" class="form-select" style="width:auto">
+                  <option value="">Conciliadas e pendentes</option>
+                  <option value="1">Somente conciliadas</option>
+                  <option value="0">Somente pendentes</option>
+                </select>
+                <button class="btn btn-outline-primary" id="btnAplicar"><i class="bi bi-search"></i> Aplicar</button>
+                <button class="btn btn-outline-secondary" id="btnExport"><i class="bi bi-download"></i> CSV</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-4 g-xl-5">
+                <div class="col-12 col-xl-6">
+                  <div class="card card-soft h-100">
+                    <div class="card-header"><strong>Entradas x Saídas (diário)</strong></div>
+                    <div class="card-body"><canvas id="chartES" height="220"></canvas></div>
+                  </div>
+                </div>
+                <div class="col-12 col-xl-6">
+                  <div class="card card-soft h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                      <strong>Distribuição por Categoria</strong>
+                      <small class="text-secondary" id="lblPie"></small>
+                    </div>
+                    <div class="card-body"><canvas id="chartPie" height="220"></canvas></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Histórico -->
+        <div class="col-12">
+          <div class="card card-soft">
+            <div class="card-header">
+              <h5 class="mb-0"><i class="bi bi-clock-history"></i> Histórico de Movimentações</h5>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table align-middle">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Tipo</th>
+                      <th>Categoria</th>
+                      <th>Descrição</th>
+                      <th>Forma</th>
+                      <th>Membro</th>
+                      <th class="text-end">Valor</th>
+                      <th class="text-center">Conciliado</th>
+                      <th class="text-end">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyHist"></tbody>
+                  <tfoot>
+                    <tr>
+                      <th colspan="6" class="text-end">Totais do período:</th>
+                      <th class="text-end" id="tValor">R$ 0,00</th>
+                      <th class="text-center" id="tConc">—</th>
+                      <th></th>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <div class="small text-secondary mt-2">Os filtros de período usam, por padrão, o <strong>Mês de Referência</strong> definido em <em>Parâmetros</em>.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Early Access Modal -->
+  <div class="modal fade" id="earlyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: var(--radius-lg);">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-lightning-charge"></i> Acesso Antecipado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3 text-secondary">Recursos em beta; obrigado por participar do acesso antecipado.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnQueroTestar"><i class="bi bi-stars"></i> Quero participar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    /* ===== Shortcuts / Consts ===== */
+    const $$ = (s,ctx=document)=>Array.from(ctx.querySelectorAll(s));
+    const $  = (s,ctx=document)=>ctx.querySelector(s);
+
+    const TEAM_KEY   = 'amaralbarber:team:v1';
+    const PARAMS_KEY = 'amaralbarber:parametros:v1';
+    const FIN_KEY    = 'amaralbarber:financeiro:v1';
+
+    let equipe = [];
+    let params = null;
+    let movs   = []; // movimentações
+
+    /* ===== Load / Save ===== */
+    function loadAll(){
+      try{ equipe = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]'); }catch(e){ equipe=[]; }
+      try{ params = JSON.parse(localStorage.getItem(PARAMS_KEY) || 'null'); }catch(e){ params=null; }
+      try{ movs   = JSON.parse(localStorage.getItem(FIN_KEY)   || '[]'); }catch(e){ movs=[]; }
+      if(!params){
+        const d=new Date();
+        params = {periodo:'Mensal', ano:d.getFullYear(), mes:d.getMonth()+1, mesRef:d.getMonth()+1, semana:'1', quinzena:'1', abrirDomingo:false, extras:[]};
+      }
+    }
+    function saveMovs(toast=true){ localStorage.setItem(FIN_KEY, JSON.stringify(movs)); if(toast) notify('Movimentação salva'); }
+
+    /* ===== Utils ===== */
+    function uid(){ return 'f_'+Math.random().toString(36).slice(2,9); }
+    function fmtMoney(n){ return (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+    function parseNum(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
+    function ymd(d){ return d.toISOString().slice(0,10); }
+    function nameOfMember(id){ const m = (equipe||[]).find(x=> x.id===id); return m? m.nome : '—'; }
+
+    function periodRange(p){
+      const {periodo, ano, mes, mesRef, semana, quinzena} = p;
+      let start, end;
+      const refMonth = (mesRef || mes);
+      theFirst = new Date(ano, refMonth-1, 1); // shadow var fix: use dedicated var
+      const firstDay = theFirst;
+      const lastDay  = new Date(ano, refMonth, 0);
+      if(periodo==='Diário'){
+        const today = new Date();
+        const d = new Date(ano, (mes||mesRef)-1, today.getDate());
+        start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        end   = new Date(start); end.setDate(end.getDate()+1);
+      }else if(periodo==='Semanal'){
+        const w = Number(semana||1);
+        start = new Date(firstDay); start.setDate(1 + (w-1)*7);
+        end   = new Date(start); end.setDate(start.getDate()+7);
+        const clamp = new Date(ano, refMonth-1, lastDay.getDate()+1);
+        if(end>clamp) end = clamp;
+      }else if(periodo==='Quinzenal'){
+        const q = Number(quinzena||1);
+        start = new Date(firstDay); start.setDate(q===1?1:16);
+        end   = new Date(firstDay); end.setDate(q===1?16:lastDay.getDate()+1);
+      }else{
+        start = firstDay; end = new Date(ano, refMonth-1, lastDay.getDate()+1);
+      }
+      return {start, end};
+    }
+
+    function notify(msg){
+      const el=document.createElement('div');
+      el.className='position-fixed top-0 start-50 translate-middle-x mt-3 z-3';
+      el.innerHTML=`<div class="toast align-items-center text-bg-primary border-0 show" role="alert"><div class="d-flex"><div class="toast-body fw-semibold">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),2500);
+    }
+
+    /* ===== Defaults ===== */
+    const DEFAULT_CATS = {
+      receita: ['Avulsos','Extras','Cortes','Produtos','Assinaturas','Outras receitas'],
+      despesa: ['Aluguel','Luz','Água','Internet','Material','Impostos','Folha','Comissões','Manutenção','Outras despesas']
+    };
+    function populateCatDatalist(){
+      const dl = $('#catList'); dl.innerHTML='';
+      const tipo = $('#tipo').value;
+      const arr = DEFAULT_CATS[tipo] || [];
+      arr.forEach(c=>{ const o=document.createElement('option'); o.value=c; dl.appendChild(o); });
+    }
+
+    function populateMembers(){
+      const sel=$('#membroId'), fSel=$('#fMembro');
+      if(!equipe.length){
+        sel.innerHTML = '<option value="">—</option>';
+        if(fSel) fSel.innerHTML = '<option value="">Todos os membros</option>';
+      }else{
+        sel.innerHTML = '<option value="">—</option>'+equipe.map(m=>`<option value="${m.id}">${m.nome} — ${m.cargo}</option>`).join('');
+        if(fSel) fSel.innerHTML = '<option value="">Todos os membros</option>'+equipe.map(m=>`<option value="${m.id}">${m.nome} — ${m.cargo}</option>`).join('');
+      }
+    }
+
+    /* ===== Form ===== */
+    function clearForm(){
+      $('#formFin').reset();
+      $('#finId').value='';
+      $('#date').value = ymd(new Date());
+      $('#tipo').value='receita';
+      populateCatDatalist();
+    }
+    function fillForm(it){
+      $('#finId').value = it.id;
+      $('#date').value = it.date;
+      $('#tipo').value = it.tipo;
+      $('#categoria').value = it.categoria || '';
+      $('#valor').value = it.valor || 0;
+      $('#forma').value = it.forma || 'Dinheiro';
+      $('#membroId').value = it.membroId || '';
+      $('#descr').value = it.descr || '';
+      $('#conciliado').checked = !!it.conciliado;
+      populateCatDatalist();
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+    function currentFromForm(){
+      return {
+        id: $('#finId').value || uid(),
+        date: $('#date').value,
+        tipo: $('#tipo').value,
+        categoria: $('#categoria').value || '',
+        valor: parseNum($('#valor').value),
+        forma: $('#forma').value,
+        membroId: $('#membroId').value || '',
+        descr: $('#descr').value || '',
+        conciliado: $('#conciliado').checked
+      };
+    }
+
+    /* ===== Filtros / Histórico ===== */
+    function applyDefaultFilters(){
+      $('#fPeriodo').value = params.periodo || 'Mensal';
+      const r = periodRange(params);
+      $('#fIni').value = ymd(r.start);
+      const endMinus1 = new Date(r.end); endMinus1.setDate(endMinus1.getDate()-1);
+      $('#fFim').value = ymd(endMinus1);
+      $('#fTipo').value='';
+      $('#fConc').value='';
+    }
+
+    function filteredData(){
+      const ini = $('#fIni').value || '0000-01-01';
+      const fim = $('#fFim').value || '9999-12-31';
+      const tipo= $('#fTipo').value;
+      const idM = $('#fMembro').value;
+      const conc = $('#fConc').value; // '' | '1' | '0'
+      let data = (movs||[]).filter(x=> x.date>=ini && x.date<=fim);
+      if(tipo) data = data.filter(x=> x.tipo===tipo);
+      if(idM)  data = data.filter(x=> x.membroId===idM);
+      if(conc==='1') data = data.filter(x=> !!x.conciliado);
+      if(conc==='0') data = data.filter(x=> !x.conciliado);
+      // sort: date desc
+      data.sort((a,b)=> a.date<b.date?1:a.date>b.date?-1:0);
+      return data;
+    }
+
+    function renderHistory(){
+      const tb = $('#tbodyHist'); tb.innerHTML='';
+      const data = filteredData();
+      if(!data.length){
+        tb.innerHTML = `<tr><td colspan="9" class="text-center text-secondary py-5">Sem movimentos no período.</td></tr>`;
+        fillTotals([]);
+        drawCharts([]);
+        fillKPIs([]);
+        return;
+      }
+      data.forEach(x=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="badge rounded-pill badge-date">${x.date}</span></td>
+          <td>${x.tipo==='receita'?'<span class="text-success">Entrada</span>':'<span class="text-danger">Saída</span>'}</td>
+          <td>${x.categoria||'—'}</td>
+          <td>${x.descr||'—'}</td>
+          <td>${x.forma||'—'}</td>
+          <td>${nameOfMember(x.membroId)}</td>
+          <td class="text-end">${fmtMoney(x.valor)}</td>
+          <td class="text-center">
+            <button class="btn btn-sm ${x.conciliado?'btn-success':'btn-outline-secondary'}" data-act="toggle" data-id="${x.id}" title="Conciliar/Desconciliar">
+              <i class="bi ${x.conciliado?'bi-check-circle':'bi-circle'}"></i>
+            </button>
+          </td>
+          <td class="text-end">
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline-primary" data-act="edit" data-id="${x.id}"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger" data-act="del" data-id="${x.id}"><i class="bi bi-trash"></i></button>
+            </div>
+          </td>`;
+        tb.appendChild(tr);
+      });
+      fillTotals(data);
+      drawCharts(data);
+      fillKPIs(data);
+    }
+
+    function fillTotals(rows){
+      const total = rows.reduce((s,x)=> s + (x.tipo==='receita'? x.valor : -x.valor), 0);
+      const concQ = rows.filter(x=> x.conciliado).length;
+      $('#tValor').textContent = fmtMoney(total);
+      $('#tConc').textContent = `${concQ}/${rows.length}`;
+    }
+
+    /* ===== KPIs ===== */
+    function fillKPIs(rows){
+      const r = rows.filter(x=> x.tipo==='receita').reduce((s,x)=> s+x.valor, 0);
+      const d = rows.filter(x=> x.tipo==='despesa').reduce((s,x)=> s+x.valor, 0);
+      $('#kEntradas').textContent = fmtMoney(r);
+      $('#kSaidas').textContent   = fmtMoney(d);
+      $('#kSaldo').textContent    = fmtMoney(r-d);
+
+      // acumulado até o fim do período filtrado
+      const fim = $('#fFim').value || '9999-12-31';
+      const allUntil = (movs||[]).filter(x=> x.date<=fim);
+      const accR = allUntil.filter(x=> x.tipo==='receita').reduce((s,x)=> s+x.valor, 0);
+      const accD = allUntil.filter(x=> x.tipo==='despesa').reduce((s,x)=> s+x.valor, 0);
+      $('#kAcumulado').textContent = fmtMoney(accR-accD);
+    }
+
+    /* ===== Charts ===== */
+    let chartES=null, chartPie=null;
+    function drawCharts(rows){
+      // Linha diária entradas/saídas (na verdade, barras empilháveis simples)
+      const mapDays = new Map();
+      rows.forEach(x=>{
+        const o = mapDays.get(x.date) || {receita:0,despesa:0};
+        o[x.tipo]+= x.valor||0;
+        mapDays.set(x.date, o);
+      });
+      const labels = Array.from(mapDays.keys()).sort();
+      const entradas = labels.map(l=> mapDays.get(l).receita);
+      const saidas   = labels.map(l=> mapDays.get(l).despesa);
+
+      const ctxES = document.getElementById('chartES');
+      if(ctxES){
+        chartES && chartES.destroy();
+        chartES = new Chart(ctxES, {
+          type:'bar',
+          data:{ labels, datasets:[{label:'Entradas', data:entradas}, {label:'Saídas', data:saidas}]},
+          options:{ responsive:true }
+        });
+      }
+
+      // Pizza por categoria (do tipo selecionado em fTipo; se vazio, usa 'despesa' por padrão)
+      const pieTipo = $('#fTipo').value || 'despesa';
+      $('#lblPie').textContent = `(${pieTipo==='receita'?'Entradas':'Saídas'})`;
+      const rowsPie = pieTipo==='receita'? rows.filter(x=> x.tipo==='receita') : rows.filter(x=> x.tipo==='despesa');
+      const mapCat = new Map();
+      rowsPie.forEach(x=>{
+        const k=x.categoria || '—';
+        mapCat.set(k, (mapCat.get(k)||0) + (x.valor||0));
+      });
+      const pLabels = Array.from(mapCat.keys());
+      const pVals   = pLabels.map(k=> mapCat.get(k));
+      const ctxPie  = document.getElementById('chartPie');
+      if(ctxPie){
+        chartPie && chartPie.destroy();
+        chartPie = new Chart(ctxPie, {
+          type:'pie',
+          data:{ labels:pLabels, datasets:[{ data:pVals }]},
+          options:{ responsive:true }
+        });
+      }
+    }
+
+    /* ===== Actions ===== */
+    function onSalvar(){
+      const it = currentFromForm();
+      if(!it.date){ alert('Informe a data'); return; }
+      if(!it.categoria){ alert('Informe a categoria'); return; }
+      if(it.valor<=0){ alert('Informe um valor válido'); return; }
+      const i = movs.findIndex(x=> x.id===it.id);
+      if(i>=0){ movs[i] = {...movs[i], ...it}; } else { movs.push(it); }
+      saveMovs(true);
+      renderHistory();
+      clearForm();
+    }
+    function onHistoryClick(e){
+      const btn = e.target.closest('button[data-act]'); if(!btn) return;
+      const id  = btn.getAttribute('data-id');
+      const act = btn.getAttribute('data-act');
+      const idx = movs.findIndex(x=> x.id===id); if(idx<0) return;
+      if(act==='edit'){ fillForm(movs[idx]); }
+      if(act==='del'){
+        if(confirm('Excluir esta movimentação?')){ movs.splice(idx,1); saveMovs(false); notify('Excluído'); renderHistory(); }
+      }
+      if(act==='toggle'){ movs[idx].conciliado = !movs[idx].conciliado; saveMovs(false); renderHistory(); }
+    }
+
+    function exportCSV(){
+      const data = filteredData();
+      const rows = [['Data','Tipo','Categoria','Descrição','Forma','Membro','Valor','Conciliado']];
+      data.forEach(x=> rows.push([x.date, x.tipo, x.categoria||'', (x.descr||'').replace(/,/g,';'), x.forma||'', nameOfMember(x.membroId), x.valor.toFixed(2), x.conciliado? 'Sim':'Não']));
+      const csv = rows.map(r=> r.join(',')).join('\n');
+      const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='financeiro.csv';
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    /* ===== Boot / Handlers ===== */
+    function attachHandlers(){
+      requestAnimationFrame(()=> $$('[data-anim]').forEach(el=> el.classList.add('in')));
+
+      const btnCollapse=$('#btnCollapseSidebar');
+      if(btnCollapse){
+        btnCollapse.addEventListener('click', ()=>{
+          const sb=$('#sidebar'), main=$('.main');
+          sb.classList.toggle('collapsed'); main.classList.toggle('collapsed');
+          try{ localStorage.setItem('amaralbarber:sidebar:collapsed', sb.classList.contains('collapsed')?'1':'0'); }catch(e){}
+        });
+      }
+      try{
+        const col = localStorage.getItem('amaralbarber:sidebar:collapsed')==='1';
+        if(col){ $('#sidebar').classList.add('collapsed'); $('.main').classList.add('collapsed'); }
+      }catch(e){}
+
+      // form
+      $('#tipo').addEventListener('change', populateCatDatalist);
+      $('#btnSalvar').addEventListener('click', onSalvar);
+      $('#btnLimpar').addEventListener('click', clearForm);
+
+      // filtros
+      $('#btnAplicar').addEventListener('click', renderHistory);
+      $('#fPeriodo').addEventListener('change', ()=>{
+        const tmp = {...params, periodo: $('#fPeriodo').value };
+        const r = periodRange(tmp);
+        $('#fIni').value = ymd(r.start);
+        const endMinus1 = new Date(r.end); endMinus1.setDate(endMinus1.getDate()-1);
+        $('#fFim').value = ymd(endMinus1);
+      });
+
+      // tabela
+      $('#tbodyHist').addEventListener('click', onHistoryClick);
+
+      // export
+      $('#btnExport').addEventListener('click', exportCSV);
+
+      // modal CTA
+      document.addEventListener('click', (e)=>{
+        const t=e.target;
+        const ok = (t && (t.id==='btnQueroTestar' || (t.closest && t.closest('#btnQueroTestar'))));
+        if(ok){ notify('Obrigado! Você será priorizado nas novidades.'); }
+      });
+    }
+
+    // Init
+    loadAll();
+    populateMembers();
+    populateCatDatalist();
+    clearForm();
+    applyDefaultFilters();
+    renderHistory();
+    attachHandlers();
+
+    // ativar nav atual
+    (function setActiveNav(){
+      const path=(location.pathname.split('/').pop()||'financeiro.html').toLowerCase();
+      $$('.nav-link[href]').forEach(a=>{
+        const href=(a.getAttribute('href')||'').toLowerCase();
+        if(href===path){ a.classList.add('active'); }
+      });
+    })();
+  </script>
+</body>
+</html>

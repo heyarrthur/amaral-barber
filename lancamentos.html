@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="pt-br" data-bs-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lançamentos Diários • Amaral Barber</title>
+
+  <!-- Bootstrap / Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --brand:#0d6efd; --brand-600:#0b5ed7; --ink:#0f172a; --subtle:#6b7280;
+      --bg:#f6f8fb; --card:#ffffff; --border:#e6eaf0;
+      --radius:16px; --radius-lg:20px;
+      --shadow-sm:0 6px 18px rgba(2,6,23,.06); --shadow-lg:0 20px 50px rgba(2,6,23,.08);
+    }
+    html, body{height:100%; background:var(--bg);}
+
+    /* Sidebar */
+    .sidebar{
+      position:fixed; inset:0 auto 0 0; width:300px;
+      background:linear-gradient(180deg,#ffffff 0%,#f9fbff 100%);
+      border-right:1px solid var(--border); z-index:1040; display:flex; flex-direction:column;
+      box-shadow:6px 0 28px rgba(2,6,23,.06);
+    }
+    .brand{ padding:24px 22px 10px; font-weight:800; color:var(--ink); font-size:1.35rem;}
+    .divider{ margin:10px 16px; border-top:1px dashed var(--border); }
+    .sub{ padding:12px 20px 6px; font-size:.78rem; color:#94a3b8; text-transform:uppercase; font-weight:700; letter-spacing:.08em;}
+    .nav-main{ padding:8px 10px 18px; overflow:auto;}
+    .nav-link{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:var(--radius); color:#0f172a; font-weight:600; transition: transform .2s ease, box-shadow .2s ease, background .2s ease;}
+    .nav-link .bi{ font-size:1.1rem; opacity:.95;}
+    .nav-link:hover{ background: rgba(13,110,253,.09); transform: translateX(3px); box-shadow: var(--shadow-sm);}
+    .nav-link.active{ background: var(--brand); color:#fff; box-shadow:0 10px 28px rgba(13,110,253,.28);}
+    .btn-as-link{ background:none; border:0; }
+
+    /* Collapse */
+    .sidebar.collapsed{ width:84px; }
+    .sidebar.collapsed .sub, .sidebar.collapsed .divider, .sidebar.collapsed .mt-auto{ display:none !important; }
+    .sidebar.collapsed .brand .title{ display:none; }
+    .sidebar .collapse-btn{ margin-left:auto; }
+    .sidebar.collapsed .nav-link{ justify-content:center; padding:12px; }
+    .sidebar.collapsed .nav-link .label{ display:none; }
+
+    .main{ margin-left:300px; min-height:100%;}
+    .main.collapsed{ margin-left:84px; }
+
+    /* Conteúdo */
+    .page{ padding:44px; }
+    .card-soft{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-lg);}
+    .card-soft .card-header{ background:transparent; border-bottom:1px solid var(--border); padding:16px 20px;}
+    .form-control, .form-select{ padding:.7rem .9rem; border-radius: 12px; border-color: var(--border);}
+    .form-control:focus, .form-select:focus{ box-shadow:0 0 0 .25rem rgba(13,110,253,.15); border-color: var(--brand-600);}
+    .btn{ border-radius:12px; }
+
+    [data-anim]{ opacity:0; transform: translateY(8px); transition: all .5s ease;}
+    [data-anim].in{ opacity:1; transform: translateY(0);}
+
+    .kpi{ border:1px solid var(--border); border-radius:16px; padding:16px; background:#fff; box-shadow:var(--shadow-sm);}
+    .kpi .label{ color:#64748b; font-size:.9rem;}
+    .kpi .value{ font-weight:800; font-size:1.4rem;}
+
+    .table tfoot th, .table tfoot td{ font-weight:700; border-top-width:2px; }
+    .badge-date{ background:#eef2ff; color:#3730a3; border:1px solid rgba(99,102,241,.25); }
+
+    @media (max-width: 991.98px){
+      .sidebar{ transform: translateX(-100%); transition: transform .3s ease;}
+      .sidebar.show{ transform: translateX(0);}
+      .main{ margin-left:0;}
+      .main.collapsed{ margin-left:0;}
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand d-flex align-items-center gap-2">
+      <i class="bi bi-scissors"></i> <span class="title">Amaral Barber</span>
+      <button class="btn btn-light btn-sm collapse-btn" id="btnCollapseSidebar" title="Recolher/expandir" aria-label="Recolher/expandir">
+        <i class="bi bi-layout-sidebar-inset"></i>
+      </button>
+    </div>
+    <hr class="divider">
+    <nav class="nav-main">
+      <button type="button" class="nav-link w-100 text-start btn-as-link" id="btnEarlyAccess" data-bs-toggle="modal" data-bs-target="#earlyModal" title="Acesso Antecipado">
+        <i class="bi bi-lightning-charge"></i> <span class="label">Acesso Antecipado</span>
+      </button>
+      <hr class="divider">
+      <div class="sub">Geral</div>
+      <a class="nav-link" href="dashboard.html" title="Dashboard"><i class="bi bi-speedometer2"></i> <span class="label">Dashboard</span></a>
+      <a class="nav-link" href="parametros.html" title="Parâmetros"><i class="bi bi-sliders"></i> <span class="label">Parâmetros</span></a>
+      <hr class="divider">
+      <div class="sub">Faturamento</div>
+      <a class="nav-link" href="financeiro.html" title="Financeiro"><i class="bi bi-wallet2"></i> <span class="label">Financeiro</span></a>
+      <a class="nav-link active" href="lancamentos.html" title="Lançamentos Diários"><i class="bi bi-journal-text"></i> <span class="label">Lançamentos Diários</span></a>
+      <hr class="divider">
+      <div class="sub">Equipe</div>
+      <a class="nav-link" href="gerenciar.html" title="Gerenciar Equipe"><i class="bi bi-people"></i> <span class="label">Gerenciar</span></a>
+      <a class="nav-link" href="estatisticas.html" title="Estatísticas"><i class="bi bi-graph-up"></i> <span class="label">Estatísticas</span></a>
+    </nav>
+    <div class="mt-auto p-3 small text-secondary">
+      <div class="d-flex align-items-center gap-2"><i class="bi bi-cloud-check"></i><span>Dados salvos no navegador (LocalStorage)</span></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <section class="page container-xxl">
+      <div class="row g-4" data-anim>
+
+        <!-- Formulário de lançamento -->
+        <div class="col-12">
+          <div class="card card-soft">
+            <div class="card-header d-flex align-items-center justify-content-between">
+              <h5 class="mb-0"><i class="bi bi-journal-plus"></i> Lançamento do Dia</h5>
+              <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary" id="btnLimpar"><i class="bi bi-eraser"></i> Limpar</button>
+                <button class="btn btn-primary" id="btnSalvar"><i class="bi bi-save"></i> Salvar</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <form id="formLanc" class="row g-4">
+                <input type="hidden" id="lanId">
+                <div class="col-md-3">
+                  <label class="form-label">Data</label>
+                  <input type="date" class="form-control" id="date" required>
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label">Profissional responsável</label>
+                  <select class="form-select" id="membroId" required></select>
+                  <div class="form-text" id="hintEquipe"></div>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Atendimentos</label>
+                  <input type="number" min="0" step="1" class="form-control" id="atendimentos" placeholder="0">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Total do dia</label>
+                  <input class="form-control" id="totalDia" disabled>
+                </div>
+
+                <div class="col-12"><h6 class="text-secondary mb-2">Categorias (R$)</h6></div>
+                <div class="col-md-2">
+                  <label class="form-label">Serviços Avulsos</label>
+                  <input type="number" min="0" step="0.01" class="form-control cat" id="avulsos" placeholder="0,00">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Serviços Extras</label>
+                  <input type="number" min="0" step="0.01" class="form-control cat" id="extras" placeholder="0,00">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Cortes</label>
+                  <input type="number" min="0" step="0.01" class="form-control cat" id="cortes" placeholder="0,00">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Produtos</label>
+                  <input type="number" min="0" step="0.01" class="form-control cat" id="produtos" placeholder="0,00">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Assinaturas</label>
+                  <input type="number" min="0" step="0.01" class="form-control cat" id="assinaturas" placeholder="0,00">
+                </div>
+              </form>
+              <div class="alert alert-info mt-3">
+                <i class="bi bi-info-circle"></i> Estes lançamentos alimentam o <strong>Estatísticas</strong> por membro e, futuramente, o <strong>Dashboard</strong>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtros e histórico -->
+        <div class="col-12">
+          <div class="card card-soft">
+            <div class="card-header d-flex align-items-center justify-content-between">
+              <h5 class="mb-0"><i class="bi bi-clock-history"></i> Histórico de Lançamentos</h5>
+              <div class="d-flex gap-2 align-items-center">
+                <span class="text-secondary">Período</span>
+                <select id="fPeriodo" class="form-select" style="width:auto">
+                  <option>Diário</option>
+                  <option>Semanal</option>
+                  <option>Quinzenal</option>
+                  <option selected>Mensal</option>
+                </select>
+                <select id="fMembro" class="form-select" style="min-width:220px">
+                  <option value="">Todos os membros</option>
+                </select>
+                <input type="date" class="form-control" id="fIni">
+                <span class="mx-1">—</span>
+                <input type="date" class="form-control" id="fFim">
+                <button class="btn btn-outline-primary" id="btnAplicar"><i class="bi bi-funnel"></i> Aplicar</button>
+                <button class="btn btn-outline-secondary" id="btnExport"><i class="bi bi-download"></i> CSV</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- KPIs do filtro -->
+              <div class="row g-3 mb-3">
+                <div class="col-6 col-md-2"><div class="kpi"><div class="label">Total período</div><div class="value" id="kTotal">R$ 0,00</div></div></div>
+                <div class="col-6 col-md-2"><div class="kpi"><div class="label">Avulsos</div><div class="value" id="kAvulsos">R$ 0,00</div></div></div>
+                <div class="col-6 col-md-2"><div class="kpi"><div class="label">Extras</div><div class="value" id="kExtras">R$ 0,00</div></div></div>
+                <div class="col-6 col-md-2"><div class="kpi"><div class="label">Cortes</div><div class="value" id="kCortes">R$ 0,00</div></div></div>
+                <div class="col-6 col-md-2"><div class="kpi"><div class="label">Produtos</div><div class="value" id="kProdutos">R$ 0,00</div></div></div>
+                <div class="col-6 col-md-2"><div class="kpi"><div class="label">Assinaturas</div><div class="value" id="kAssinaturas">R$ 0,00</div></div></div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table align-middle">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Membro</th>
+                      <th class="text-end">Avulsos</th>
+                      <th class="text-end">Extras</th>
+                      <th class="text-end">Cortes</th>
+                      <th class="text-end">Produtos</th>
+                      <th class="text-end">Assinaturas</th>
+                      <th class="text-end">Atend.</th>
+                      <th class="text-end">Total</th>
+                      <th class="text-end">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyHist"></tbody>
+                  <tfoot>
+                    <tr>
+                      <th colspan="2" class="text-end">Totais:</th>
+                      <th class="text-end" id="tAvulsos">R$ 0,00</th>
+                      <th class="text-end" id="tExtras">R$ 0,00</th>
+                      <th class="text-end" id="tCortes">R$ 0,00</th>
+                      <th class="text-end" id="tProdutos">R$ 0,00</th>
+                      <th class="text-end" id="tAssinaturas">R$ 0,00</th>
+                      <th class="text-end" id="tAtendimentos">0</th>
+                      <th class="text-end" id="tTotal">R$ 0,00</th>
+                      <th></th>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <div class="small text-secondary">Os filtros de período usam, por padrão, o <strong>Mês de Referência</strong> definido em <em>Parâmetros</em>.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Early Access Modal -->
+  <div class="modal fade" id="earlyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: var(--radius-lg);">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-lightning-charge"></i> Acesso Antecipado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3 text-secondary">Recursos em beta; obrigado por participar do acesso antecipado.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnQueroTestar"><i class="bi bi-stars"></i> Quero participar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    /* ===== Shortcuts / Consts ===== */
+    const $$ = (s,ctx=document)=>Array.from(ctx.querySelectorAll(s));
+    const $  = (s,ctx=document)=>ctx.querySelector(s);
+
+    const TEAM_KEY   = 'amaralbarber:team:v1';
+    const PARAMS_KEY = 'amaralbarber:parametros:v1';
+    const LANC_KEY   = 'amaralbarber:lancamentos:v1';
+
+    let equipe = [];
+    let params = null;
+    let lanc   = []; // [{id, date:'YYYY-MM-DD', membroId, avulsos, extras, cortes, produtos, assinaturas, atendimentos}]
+
+    /* ===== Load / Save ===== */
+    function loadAll(){
+      try{ equipe = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]'); }catch(e){ equipe=[]; }
+      try{ params = JSON.parse(localStorage.getItem(PARAMS_KEY) || 'null'); }catch(e){ params=null; }
+      try{ lanc   = JSON.parse(localStorage.getItem(LANC_KEY)   || '[]'); }catch(e){ lanc=[]; }
+      if(!params){
+        const d=new Date();
+        params = {periodo:'Mensal', ano:d.getFullYear(), mes:d.getMonth()+1, mesRef:d.getMonth()+1, semana:'1', quinzena:'1', abrirDomingo:false, extras:[]};
+      }
+    }
+    function saveLanc(){ localStorage.setItem(LANC_KEY, JSON.stringify(lanc)); toast('Lançamento salvo'); }
+
+    /* ===== Utils ===== */
+    function uid(){ return 'l'+Math.random().toString(36).slice(2,9); }
+    function fmtMoney(n){ return (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+    function parseNum(v){ const n = parseFloat(v); return isNaN(n)? 0 : n; }
+    function ymd(d){ return d.toISOString().slice(0,10); }
+
+    function periodRange(p){
+      const {periodo, ano, mes, mesRef, semana, quinzena} = p;
+      let start, end;
+      const refMonth = (mesRef || mes);
+      const firstDay = new Date(ano, refMonth-1, 1);
+      const lastDay  = new Date(ano, refMonth, 0);
+      if(periodo==='Diário'){
+        const today = new Date();
+        const d = new Date(ano, (mes||mesRef)-1, today.getDate());
+        start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        end   = new Date(start); end.setDate(end.getDate()+1);
+      }else if(periodo==='Semanal'){
+        const w = Number(semana||1); // semanas 1..4
+        start = new Date(firstDay); start.setDate(1 + (w-1)*7);
+        end   = new Date(start); end.setDate(start.getDate()+7);
+        if(end>new Date(ano, refMonth-1, lastDay.getDate()+1)) end = new Date(ano, refMonth-1, lastDay.getDate()+1);
+      }else if(periodo==='Quinzenal'){
+        const q = Number(quinzena||1);
+        start = new Date(firstDay); start.setDate(q===1?1:16);
+        end   = new Date(firstDay); end.setDate(q===1?16:lastDay.getDate()+1);
+      }else{ // Mensal
+        start = firstDay; end = new Date(ano, refMonth-1, lastDay.getDate()+1);
+      }
+      return {start, end};
+    }
+
+    function toast(msg){
+      const el=document.createElement('div');
+      el.className='position-fixed top-0 start-50 translate-middle-x mt-3 z-3';
+      el.innerHTML=`<div class="toast align-items-center text-bg-primary border-0 show" role="alert"><div class="d-flex"><div class="toast-body fw-semibold">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),2500);
+    }
+
+    /* ===== Form ===== */
+    function populateMembersSelects(){
+      const sel = $('#membroId');
+      const fSel = $('#fMembro');
+      if(!equipe.length){
+        sel.innerHTML = '<option value="">Nenhum membro — cadastre em Gerenciar</option>';
+        $('#hintEquipe').innerHTML = 'Vá em <a href="gerenciar.html">Gerenciar</a> para cadastrar membros.';
+      }else{
+        sel.innerHTML = '<option value="">Selecione...</option>' + equipe.map(m=> `<option value="${m.id}">${m.nome} — ${m.cargo}</option>`).join('');
+      }
+      if(fSel){
+        fSel.innerHTML = '<option value="">Todos os membros</option>' + equipe.map(m=> `<option value="${m.id}">${m.nome} — ${m.cargo}</option>`).join('');
+      }
+    }
+    function calcTotal(){
+      const total = ['avulsos','extras','cortes','produtos','assinaturas'].reduce((s,id)=> s + parseNum($('#'+id).value), 0);
+      $('#totalDia').value = fmtMoney(total);
+      return total;
+    }
+    function clearForm(){
+      $('#formLanc').reset();
+      $('#lanId').value = '';
+      // manter o membro escolhido? pref: manter
+      // manter data com hoje
+      const d = new Date();
+      $('#date').value = ymd(d);
+      calcTotal();
+    }
+    function fillForm(item){
+      $('#lanId').value = item.id;
+      $('#date').value  = item.date;
+      $('#membroId').value = item.membroId || '';
+      $('#avulsos').value = item.avulsos || 0;
+      $('#extras').value = item.extras || 0;
+      $('#cortes').value = item.cortes || 0;
+      $('#produtos').value = item.produtos || 0;
+      $('#assinaturas').value = item.assinaturas || 0;
+      $('#atendimentos').value = item.atendimentos || 0;
+      calcTotal();
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+    function currentFromForm(){
+      return {
+        id: $('#lanId').value || uid(),
+        date: $('#date').value,
+        membroId: $('#membroId').value,
+        avulsos: parseNum($('#avulsos').value),
+        extras: parseNum($('#extras').value),
+        cortes: parseNum($('#cortes').value),
+        produtos: parseNum($('#produtos').value),
+        assinaturas: parseNum($('#assinaturas').value),
+        atendimentos: parseInt($('#atendimentos').value||'0',10)
+      };
+    }
+
+    /* ===== Histórico / Filtros ===== */
+    function applyDefaultFilters(){
+      // período padrão = params.periodo; datas do range
+      $('#fPeriodo').value = params.periodo || 'Mensal';
+      const r = periodRange(params);
+      $('#fIni').value = ymd(r.start);
+      const endMinus1 = new Date(r.end); endMinus1.setDate(endMinus1.getDate()-1);
+      $('#fFim').value = ymd(endMinus1);
+    }
+
+    function nameOfMember(id){
+      const m = equipe.find(x=> x.id===id);
+      return m? m.nome : '—';
+    }
+
+    function renderHistory(){
+      const tb = $('#tbodyHist'); tb.innerHTML = '';
+      // filtros
+      const idM = $('#fMembro').value;
+      const ini = $('#fIni').value || '0000-01-01';
+      const fim = $('#fFim').value || '9999-12-31';
+
+      let data = lanc.filter(x => x.date>=ini && x.date<=fim);
+      if(idM) data = data.filter(x => x.membroId===idM);
+      // ordem por data desc
+      data.sort((a,b)=> a.date<b.date ? 1 : a.date>b.date ? -1 : 0);
+
+      if(!data.length){
+        tb.innerHTML = `<tr><td colspan="10" class="text-center text-secondary py-5">Sem lançamentos no período.</td></tr>`;
+        setTotalsFooter([]);
+        setKPIs([]);
+        return;
+      }
+
+      data.forEach(it=>{
+        const total = it.avulsos+it.extras+it.cortes+it.produtos+it.assinaturas;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="badge rounded-pill badge-date">${it.date}</span></td>
+          <td>${nameOfMember(it.membroId)}</td>
+          <td class="text-end">${fmtMoney(it.avulsos)}</td>
+          <td class="text-end">${fmtMoney(it.extras)}</td>
+          <td class="text-end">${fmtMoney(it.cortes)}</td>
+          <td class="text-end">${fmtMoney(it.produtos)}</td>
+          <td class="text-end">${fmtMoney(it.assinaturas)}</td>
+          <td class="text-end">${it.atendimentos||0}</td>
+          <td class="text-end">${fmtMoney(total)}</td>
+          <td class="text-end">
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline-primary" data-act="edit" data-id="${it.id}"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger" data-act="del" data-id="${it.id}"><i class="bi bi-trash"></i></button>
+            </div>
+          </td>`;
+        tb.appendChild(tr);
+      });
+
+      setTotalsFooter(data);
+      setKPIs(data);
+    }
+
+    function setTotalsFooter(rows){
+      const sum = rows.reduce((a,b)=>({
+        avulsos:a.avulsos + b.avulsos,
+        extras:a.extras + b.extras,
+        cortes:a.cortes + b.cortes,
+        produtos:a.produtos + b.produtos,
+        assinaturas:a.assinaturas + b.assinaturas,
+        atendimentos:a.atendimentos + (b.atendimentos||0)
+      }),{avulsos:0,extras:0,cortes:0,produtos:0,assinaturas:0,atendimentos:0});
+      const total = sum.avulsos+sum.extras+sum.cortes+sum.produtos+sum.assinaturas;
+
+      $('#tAvulsos').textContent = fmtMoney(sum.avulsos);
+      $('#tExtras').textContent = fmtMoney(sum.extras);
+      $('#tCortes').textContent = fmtMoney(sum.cortes);
+      $('#tProdutos').textContent = fmtMoney(sum.produtos);
+      $('#tAssinaturas').textContent = fmtMoney(sum.assinaturas);
+      $('#tAtendimentos').textContent = (sum.atendimentos||0);
+      $('#tTotal').textContent = fmtMoney(total);
+    }
+
+    function setKPIs(rows){
+      const sum = rows.reduce((a,b)=>({
+        avulsos:a.avulsos + b.avulsos,
+        extras:a.extras + b.extras,
+        cortes:a.cortes + b.cortes,
+        produtos:a.produtos + b.produtos,
+        assinaturas:a.assinaturas + b.assinaturas
+      }),{avulsos:0,extras:0,cortes:0,produtos:0,assinaturas:0});
+      const total = sum.avulsos+sum.extras+sum.cortes+sum.produtos+sum.assinaturas;
+
+      $('#kTotal').textContent = fmtMoney(total);
+      $('#kAvulsos').textContent = fmtMoney(sum.avulsos);
+      $('#kExtras').textContent = fmtMoney(sum.extras);
+      $('#kCortes').textContent = fmtMoney(sum.cortes);
+      $('#kProdutos').textContent = fmtMoney(sum.produtos);
+      $('#kAssinaturas').textContent = fmtMoney(sum.assinaturas);
+    }
+
+    function handleHistoryClick(e){
+      const btn = e.target.closest('button[data-act]'); if(!btn) return;
+      const id = btn.getAttribute('data-id'); const act = btn.getAttribute('data-act');
+      const idx = lanc.findIndex(x=> x.id===id); if(idx<0) return;
+      if(act==='edit'){ fillForm(lanc[idx]); }
+      if(act==='del'){
+        if(confirm('Excluir este lançamento?')){
+          lanc.splice(idx,1); saveLanc(); renderHistory();
+        }
+      }
+    }
+
+    /* ===== Export ===== */
+    function exportCSV(){
+      const idM = $('#fMembro').value;
+      const ini = $('#fIni').value || '0000-01-01';
+      const fim = $('#fFim').value || '9999-12-31';
+      let data = lanc.filter(x => x.date>=ini && x.date<=fim);
+      if(idM) data = data.filter(x => x.membroId===idM);
+      data.sort((a,b)=> a.date<b.date ? 1 : a.date>b.date ? -1 : 0);
+
+      const rows = [['Data','Membro','Avulsos','Extras','Cortes','Produtos','Assinaturas','Atendimentos','Total']];
+      data.forEach(it=>{
+        const total = it.avulsos+it.extras+it.cortes+it.produtos+it.assinaturas;
+        rows.push([it.date, nameOfMember(it.membroId), it.avulsos, it.extras, it.cortes, it.produtos, it.assinaturas, (it.atendimentos||0), total]);
+      });
+      const csv = rows.map(r=> r.join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='lancamentos.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    /* ===== Handlers / Boot ===== */
+    function attachHandlers(){
+      // animação
+      requestAnimationFrame(()=> $$('[data-anim]').forEach(el=> el.classList.add('in')));
+
+      // collapse sidebar
+      const btnCollapse = $('#btnCollapseSidebar');
+      if(btnCollapse){
+        btnCollapse.addEventListener('click', ()=>{
+          const sb=$('#sidebar'), main=$('.main');
+          sb.classList.toggle('collapsed'); main.classList.toggle('collapsed');
+          try{ localStorage.setItem('amaralbarber:sidebar:collapsed', sb.classList.contains('collapsed')?'1':'0'); }catch(e){}
+        });
+      }
+      // restaurar estado collapse
+      try{
+        const col = localStorage.getItem('amaralbarber:sidebar:collapsed')==='1';
+        if(col){ $('#sidebar').classList.add('collapsed'); $('.main').classList.add('collapsed'); }
+      }catch(e){}
+
+      // form: recálculo total
+      $$('.cat').forEach(inp=> inp.addEventListener('input', calcTotal));
+
+      // salvar
+      $('#btnSalvar').addEventListener('click', ()=>{
+        const item = currentFromForm();
+        if(!item.date){ alert('Informe a data'); return; }
+        if(!item.membroId){ alert('Selecione o profissional responsável'); return; }
+        const i = lanc.findIndex(x=> x.id===item.id);
+        if(i>=0){ lanc[i] = {...lanc[i], ...item}; } else { lanc.push(item); }
+        saveLanc();
+        renderHistory();
+        clearForm();
+      });
+
+      // limpar
+      $('#btnLimpar').addEventListener('click', clearForm);
+
+      // filtros
+      $('#btnAplicar').addEventListener('click', renderHistory);
+      $('#fPeriodo').addEventListener('change', ()=>{
+        // só ajusta datas conforme período escolhido, sem salvar em parametros globais
+        const temp = {...params, periodo: $('#fPeriodo').value };
+        const r = periodRange(temp);
+        $('#fIni').value = ymd(r.start);
+        const endMinus1 = new Date(r.end); endMinus1.setDate(endMinus1.getDate()-1);
+        $('#fFim').value = ymd(endMinus1);
+      });
+
+      // histórico actions
+      $('#tbodyHist').addEventListener('click', handleHistoryClick);
+
+      // export
+      $('#btnExport').addEventListener('click', exportCSV);
+
+      // CTA visual do modal
+      document.addEventListener('click', (e)=>{
+        const t = e.target;
+        if(t && (t.id === 'btnQueroTestar' || t.closest?.('#btnQueroTestar'))){
+          toast('Obrigado! Você será priorizado nas novidades.');
+        }
+      });
+    }
+
+    // Boot
+    loadAll();
+    // preparar selects e datas
+    populateMembersSelects();
+    const today = new Date(); $('#date').value = ymd(today);
+    calcTotal();
+    applyDefaultFilters();
+    renderHistory();
+    attachHandlers();
+
+    // ativar nav atual
+    (function setActiveNav(){
+      const path=(location.pathname.split('/').pop()||'lancamentos.html').toLowerCase();
+      $$('.nav-link[href]').forEach(a=>{
+        const href=(a.getAttribute('href')||'').toLowerCase();
+        if(href===path){ a.classList.add('active'); }
+      });
+    })();
+  </script>
+</body>
+</html>
